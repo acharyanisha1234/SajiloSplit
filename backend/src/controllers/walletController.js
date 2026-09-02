@@ -1,136 +1,70 @@
-const Wallet = require('../models/Wallet');
-const WalletTransaction = require('../models/WalletTransaction');
-const User = require('../models/User');
-const mongoose = require('mongoose');
-const { generateTransactionId } = require('../utils/generateId');
-
-// getWallet
-// addMoney
-// माथिको code जस्ताको तस्तै राख्ने
-
-// @desc    Send money to another user
-// @route   POST /api/wallet/send
+// @desc    Get transaction history
+// @route   GET /api/wallet/transactions
 // @access  Private
-const sendMoney = async (req, res) => {
+const getTransactions = async (req, res) => {
   try {
-    const { receiverId, amount, purpose } = req.body;
+    const {
+      page = 1,
+      limit = 20,
+      type,
+      startDate,
+      endDate
+    } = req.query;
 
-    if (amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Amount must be greater than 0'
-      });
+    const query = {
+      $or: [
+        { sender: req.user.id },
+        { receiver: req.user.id }
+      ]
+    };
+
+    if (type) {
+      query.type = type;
     }
 
-    const receiver = await User.findById(receiverId);
+    if (startDate || endDate) {
+      query.createdAt = {};
 
-    if (!receiver) {
-      return res.status(404).json({
-        success: false,
-        message: 'Receiver not found'
-      });
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+
+      if (endDate) {
+        query.createdAt.$lte = new Date(endDate);
+      }
     }
 
-    if (receiverId === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot send money to yourself'
-      });
-    }
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const senderWallet = await Wallet.findOne({
-      user: req.user.id
-    });
+    const [transactions, total] = await Promise.all([
+      WalletTransaction.find(query)
+        .populate('sender', 'name email')
+        .populate('receiver', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
 
-    const receiverWallet = await Wallet.findOne({
-      user: receiverId
-    });
+      WalletTransaction.countDocuments(query)
+    ]);
 
-    if (!senderWallet || !receiverWallet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Wallet not found'
-      });
-    }
-
-    if (senderWallet.availableBalance < amount) {
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient balance'
-      });
-    }
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-      const senderBalanceBefore = senderWallet.balance;
-
-      senderWallet.balance -= amount;
-      senderWallet.availableBalance -= amount;
-
-      await senderWallet.save({ session });
-
-      receiverWallet.balance += amount;
-      receiverWallet.availableBalance += amount;
-
-      await receiverWallet.save({ session });
-
-      const transactionId = generateTransactionId();
-
-      await WalletTransaction.create([{
-        transactionId,
-        sender: req.user.id,
-        receiver: receiverId,
-        amount,
-        type: 'transfer',
-        status: 'completed',
-        purpose: purpose || 'Money transfer',
-        balanceBefore: senderBalanceBefore,
-        balanceAfter: senderWallet.balance
-      }], { session });
-
-      await session.commitTransaction();
-      session.endSession();
-
-      const io = global.io;
-
-      io.to(`user-${receiverId}`).emit('notification', {
-        type: 'money_received',
-        title: 'Money Received',
-        message: `You received Rs. ${amount} from ${req.user.name}`
-      });
-
-      io.to(`user-${req.user.id}`).emit('notification', {
-        type: 'money_sent',
-        title: 'Money Sent',
-        message: `You sent Rs. ${amount} to ${receiver.name}`
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Money sent successfully',
-        data: {
-          transactionId,
-          amount,
-          receiver: receiver.name
+    res.status(200).json({
+      success: true,
+      data: {
+        transactions,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(
+            total / parseInt(limit)
+          )
         }
-      });
-    } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      throw error;
-    }
+      }
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message
     });
   }
-};
-
-module.exports = {
-  getWallet,
-  addMoney,
-  sendMoney
 };
