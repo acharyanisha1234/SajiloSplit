@@ -28,7 +28,8 @@ const calculateSettlements = async (groupId, expenses) => {
         balances.set(memberId, 0);
       }
 
-      const share = expense.splitDetails[memberId] || 0;
+      const share =
+        expense.splitDetails[memberId] || 0;
 
       balances.set(
         memberId,
@@ -37,6 +38,7 @@ const calculateSettlements = async (groupId, expenses) => {
     }
   }
 
+  // Add paid amounts
   for (const [userId, totalPaid] of paidByMap) {
     if (!balances.has(userId)) {
       balances.set(userId, 0);
@@ -68,7 +70,6 @@ const calculateSettlements = async (groupId, expenses) => {
   creditors.sort((a, b) => b.amount - a.amount);
   debtors.sort((a, b) => b.amount - a.amount);
 
-  // Generate settlements
   const settlements = [];
 
   let i = 0;
@@ -98,18 +99,106 @@ const calculateSettlements = async (groupId, expenses) => {
     debtor.amount -= amount;
     creditor.amount -= amount;
 
-    if (debtor.amount === 0) {
-      i++;
-    }
-
-    if (creditor.amount === 0) {
-      j++;
-    }
+    if (debtor.amount === 0) i++;
+    if (creditor.amount === 0) j++;
   }
 
   return settlements;
 };
 
+
+// Process settlements
+const processSettlements = async (groupId) => {
+  const session = await mongoose.startSession();
+
+  session.startTransaction();
+
+  try {
+    const pendingSettlements =
+      await Settlement.find({
+        group: groupId,
+        status: 'pending'
+      }).session(session);
+
+    for (const settlement of pendingSettlements) {
+
+      const fromWallet = await Wallet.findOne({
+        user: settlement.from
+      }).session(session);
+
+      const toWallet = await Wallet.findOne({
+        user: settlement.to
+      }).session(session);
+
+      if (!fromWallet || !toWallet) {
+        continue;
+      }
+
+      // Check sufficient balance
+      if (
+        fromWallet.availableBalance <
+        settlement.amount
+      ) {
+        continue;
+      }
+
+      // Store balance before transaction
+      const balanceBeforeFrom =
+        fromWallet.balance;
+
+      // Deduct sender wallet
+      fromWallet.balance -= settlement.amount;
+      fromWallet.availableBalance -= settlement.amount;
+
+      await fromWallet.save({ session });
+
+      // Add receiver wallet
+      toWallet.balance += settlement.amount;
+      toWallet.availableBalance += settlement.amount;
+
+      await toWallet.save({ session });
+
+      // Create transaction
+      const transactionId =
+        generateTransactionId();
+
+      await WalletTransaction.create([{
+        transactionId,
+        sender: settlement.from,
+        receiver: settlement.to,
+        amount: settlement.amount,
+        type: 'settlement',
+        status: 'completed',
+        purpose: 'Settlement for group',
+        group: groupId,
+        settlement: settlement._id,
+        balanceBefore: balanceBeforeFrom,
+        balanceAfter: fromWallet.balance
+      }], { session });
+
+      // Update settlement
+      settlement.status = 'paid';
+      settlement.settledAt = new Date();
+      settlement.transactionId = transactionId;
+
+      await settlement.save({ session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return true;
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    throw error;
+  }
+};
+
+
 module.exports = {
-  calculateSettlements
+  calculateSettlements,
+  processSettlements
 };
