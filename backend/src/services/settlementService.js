@@ -4,13 +4,11 @@ const Wallet = require('../models/Wallet');
 const mongoose = require('mongoose');
 const { generateTransactionId } = require('../utils/generateId');
 
-// Calculate settlements for a group using a simplified algorithm
 const calculateSettlements = async (groupId, expenses) => {
-  // Group expenses by paidBy
   const paidByMap = new Map();
   const balances = new Map();
 
-  // Calculate net balances
+  // Calculate balances
   for (const expense of expenses) {
     const paidBy = expense.paidBy.toString();
     const amount = expense.amount;
@@ -24,7 +22,6 @@ const calculateSettlements = async (groupId, expenses) => {
       paidByMap.get(paidBy) + amount
     );
 
-    // Calculate each member's share
     for (const member of expense.members) {
       const memberId = member.toString();
 
@@ -40,6 +37,40 @@ const calculateSettlements = async (groupId, expenses) => {
       );
     }
   }
+
+  // Add total paid amount to payer's balance
+  for (const [userId, totalPaid] of paidByMap) {
+    if (!balances.has(userId)) {
+      balances.set(userId, 0);
+    }
+
+    balances.set(
+      userId,
+      balances.get(userId) + totalPaid
+    );
+  }
+
+  // Separate creditors and debtors
+  const creditors = [];
+  const debtors = [];
+
+  for (const [userId, balance] of balances) {
+    if (balance > 0) {
+      creditors.push({
+        userId,
+        amount: balance
+      });
+    } else if (balance < 0) {
+      debtors.push({
+        userId,
+        amount: Math.abs(balance)
+      });
+    }
+  }
+
+  // Sort by largest amount
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
 };
 
 module.exports = {
