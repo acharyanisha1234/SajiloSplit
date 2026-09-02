@@ -8,7 +8,6 @@ const calculateSettlements = async (groupId, expenses) => {
   const paidByMap = new Map();
   const balances = new Map();
 
-  // Calculate balances
   for (const expense of expenses) {
     const paidBy = expense.paidBy.toString();
     const amount = expense.amount;
@@ -38,7 +37,6 @@ const calculateSettlements = async (groupId, expenses) => {
     }
   }
 
-  // Add total paid amount to payer's balance
   for (const [userId, totalPaid] of paidByMap) {
     if (!balances.has(userId)) {
       balances.set(userId, 0);
@@ -50,7 +48,6 @@ const calculateSettlements = async (groupId, expenses) => {
     );
   }
 
-  // Separate creditors and debtors
   const creditors = [];
   const debtors = [];
 
@@ -68,9 +65,49 @@ const calculateSettlements = async (groupId, expenses) => {
     }
   }
 
-  // Sort by largest amount
   creditors.sort((a, b) => b.amount - a.amount);
   debtors.sort((a, b) => b.amount - a.amount);
+
+  // Generate settlements
+  const settlements = [];
+
+  let i = 0;
+  let j = 0;
+
+  while (
+    i < debtors.length &&
+    j < creditors.length
+  ) {
+    const debtor = debtors[i];
+    const creditor = creditors[j];
+
+    const amount = Math.min(
+      debtor.amount,
+      creditor.amount
+    );
+
+    if (amount > 0) {
+      settlements.push({
+        from: debtor.userId,
+        to: creditor.userId,
+        amount: Math.round(amount * 100) / 100,
+        group: groupId
+      });
+    }
+
+    debtor.amount -= amount;
+    creditor.amount -= amount;
+
+    if (debtor.amount === 0) {
+      i++;
+    }
+
+    if (creditor.amount === 0) {
+      j++;
+    }
+  }
+
+  return settlements;
 };
 
 module.exports = {
