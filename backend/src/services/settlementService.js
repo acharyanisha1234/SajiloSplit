@@ -38,7 +38,7 @@ const calculateSettlements = async (groupId, expenses) => {
     }
   }
 
-  // Add paid amounts
+  // Add paid amount 
   for (const [userId, totalPaid] of paidByMap) {
     if (!balances.has(userId)) {
       balances.set(userId, 0);
