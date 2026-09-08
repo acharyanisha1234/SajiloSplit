@@ -242,7 +242,7 @@ const Groups = () => {
         </div>
       )}
     </div>
-  )
+  );
 };
 
 export default Groups;
