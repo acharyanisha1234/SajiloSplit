@@ -22,6 +22,15 @@ export const useSocket = () => {
       dispatch(addNotification(data));
     });
 
+    // Listen for connection events
+    newSocket.on('connect', () => {
+      console.log('Socket connected');
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+
     return () => {
       newSocket.close();
     };
