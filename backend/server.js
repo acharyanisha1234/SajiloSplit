@@ -22,12 +22,13 @@ mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('MongoDB connected successfully'))
+.then(() => console.log(' MongoDB connected successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
 
 // Socket.io setup
 global.io = io;
-require('./src/sockets')(io);
+const socketHandler = require('./src/sockets');
+socketHandler(io);
 
 // Middleware
 app.use(helmet());
