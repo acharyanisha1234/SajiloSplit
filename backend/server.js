@@ -17,15 +17,15 @@ const io = new Server(server, {
   }
 });
 
-// Database connection
+// Database
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log(' MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+.then(() => console.log(' MongoDB connected'))
+.catch(err => console.error('MongoDB error:', err));
 
-// Socket.io setup
+// Socket.io
 global.io = io;
 const socketHandler = require('./src/sockets');
 socketHandler(io);
@@ -39,9 +39,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// ===== ROUTES =====
 app.use('/api/auth', require('./src/routes/authRoutes'));
-app.use('/api/users', require('./src/routes/userRoutes'));
+app.use('/api/users', require('./src/routes/userRoutes'));  
 app.use('/api/wallet', require('./src/routes/walletRoutes'));
 app.use('/api/transactions', require('./src/routes/transactionRoutes'));
 app.use('/api/groups', require('./src/routes/groupRoutes'));
@@ -56,7 +56,7 @@ app.use('/api/disputes', require('./src/routes/disputeRoutes'));
 app.use('/api/categories', require('./src/routes/categoryRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 
-// Error handling middleware
+// Error handler
 app.use(require('./src/middleware/error').errorHandler);
 
 const PORT = process.env.PORT || 5000;

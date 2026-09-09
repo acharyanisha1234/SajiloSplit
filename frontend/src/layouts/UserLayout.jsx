@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   Menu, X, Bell, User, LogOut, Home, Wallet, Users, 
-  PieChart, Calendar, Lock, Shield, Settings, FileText 
+  PieChart, Calendar, Lock, Shield, Settings, FileText, 
+  CreditCard, ChevronRight, Sparkles
 } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import { useSocket } from '../hooks/useSocket';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
 const UserLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useSelector((state) => state.auth);
   const { unreadCount } = useSelector((state) => state.notifications);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const socket = useSocket();
+  
+  const { t } = useLanguage();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     if (socket && user) {
@@ -28,126 +35,125 @@ const UserLayout = () => {
   };
 
   const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { icon: Users, label: 'Groups', path: '/groups' },
-    { icon: PieChart, label: 'Budgets', path: '/budgets' },
-    { icon: Calendar, label: 'Bills', path: '/bills' },
-    { icon: Lock, label: 'Locked Funds', path: '/locked-funds' },
-    { icon: Shield, label: 'Emergency Funds', path: '/emergency-funds' },
-    { icon: FileText, label: 'Settlements', path: '/settlements' },
+    { icon: Home, label: t('dashboard') || 'Dashboard', path: '/dashboard' },
+    { icon: CreditCard, label: t('wallet') || 'Wallet', path: '/wallet' },
+    { icon: Users, label: t('groups') || 'Groups', path: '/groups' },
+    { icon: PieChart, label: t('budgets') || 'Budgets', path: '/budgets' },
+    { icon: Calendar, label: t('bills') || 'Bills', path: '/bills' },
+    { icon: Lock, label: t('lockedFunds') || 'Locked Funds', path: '/locked-funds' },
+    { icon: Shield, label: t('emergencyFunds') || 'Emergency Funds', path: '/emergency-funds' },
+    { icon: FileText, label: t('settlements') || 'Settlements', path: '/settlements' },
   ];
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Nav */}
-      <nav className="lg:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-40">
-        <button onClick={() => setSidebarOpen(true)}>
-          <Menu className="w-6 h-6 text-gray-700" />
-        </button>
-        <h1 className="text-xl font-bold text-primary-600">SajiloSplit</h1>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/notifications')} className="relative">
-            <Bell className="w-6 h-6 text-gray-700" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          <button onClick={() => navigate('/profile')}>
-            <User className="w-6 h-6 text-gray-700" />
-          </button>
-        </div>
-      </nav>
+  const isActive = (path) => location.pathname === path;
 
-      {/* Sidebar */}
+  return (
+    <div className="min-h-screen flex" style={{ 
+      backgroundColor: 'var(--background)',
+      color: 'var(--text-primary)'
+    }}>
+      {/* ===== SIDEBAR ===== */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-64 bg-white shadow-lg transform transition-transform duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:shadow-sm
+        fixed lg:sticky top-0 left-0 z-50 h-screen w-[280px] 
+        glass-sidebar
+        flex flex-col justify-between p-6 transition-transform duration-300 ease-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="h-full flex flex-col">
+        <div className="space-y-6">
           {/* Logo */}
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-primary-600">SajiloSplit</h1>
-                <p className="text-sm text-gray-500">Smart Money Management</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0EA5A5] to-[#1A2E4A] flex items-center justify-center shadow-lg shadow-[#0EA5A5]/20">
+                <span className="text-white font-bold text-xl font-mono tracking-wider">S</span>
               </div>
-              <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
-                <X className="w-6 h-6 text-gray-700" />
-              </button>
+              <div>
+                <h1 className="font-bold text-lg leading-none tracking-tight text-primary">
+                  Sajilo<span className="text-[#0EA5A5]">Split</span>
+                </h1>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-[#D4A373]">Fintech Nepal</span>
+              </div>
             </div>
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-xl text-secondary hover:text-primary hover:bg-surface-hover transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* User Info */}
-          <div className="px-4 py-3 border-b">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                <span className="text-primary-600 font-semibold">
-                  {user?.name?.charAt(0) || 'U'}
-                </span>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{user?.name}</p>
-                <p className="text-sm text-gray-500">{user?.email}</p>
-              </div>
+          {/* User Profile */}
+          <div className="p-3.5 rounded-2xl bg-[#0EA5A5]/5 border border-[#0EA5A5]/10 flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] text-white flex items-center justify-center font-semibold shadow-sm">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-primary truncate">{user?.name || 'User'}</p>
+              <p className="text-xs text-secondary truncate">{user?.email || 'user@email.com'}</p>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
-              <button
-                key={item.path}
-                onClick={() => {
-                  navigate(item.path);
-                  setSidebarOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors"
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
-            ))}
+          <nav className="space-y-1">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-secondary mb-2">
+              {t('menu') || 'Menu'}
+            </p>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200
+                    ${active 
+                      ? 'bg-[#0EA5A5]/10 text-[#0EA5A5] border-r-4 border-[#0EA5A5] shadow-sm' 
+                      : 'text-secondary hover:bg-surface-hover hover:text-primary'}
+                  `}
+                >
+                  <Icon className={`w-5 h-5 ${active ? 'text-[#0EA5A5]' : 'text-muted'}`} />
+                  <span>{item.label}</span>
+                  {active && <ChevronRight className="w-4 h-4 ml-auto text-[#0EA5A5]" />}
+                </button>
+              );
+            })}
           </nav>
+        </div>
 
-          {/* Bottom */}
-          <div className="p-4 border-t space-y-2">
-            <button
-              onClick={() => {
-                navigate('/settings');
-                setSidebarOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
-          </div>
+        {/* Bottom */}
+        <div className="space-y-1 pt-6 border-t border-border">
+          <button
+            onClick={() => { navigate('/settings'); setSidebarOpen(false); }}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-secondary hover:bg-surface-hover hover:text-primary transition duration-200"
+          >
+            <Settings className="w-5 h-5 text-muted" />
+            <span>{t('settings') || 'Settings'}</span>
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition duration-200 dark:hover:bg-red-900/20"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>{t('logout') || 'Logout'}</span>
+          </button>
         </div>
       </aside>
 
-      {/* Overlay */}
+      {/* ===== MAIN CONTENT ===== */}
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <Outlet />
+      </main>
+
+      {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+        <div 
+          className="fixed inset-0 bg-[#1A2E4A]/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Main Content */}
-      <main className="lg:ml-64 p-4 lg:p-8">
-        <Outlet />
-      </main>
     </div>
   );
 };

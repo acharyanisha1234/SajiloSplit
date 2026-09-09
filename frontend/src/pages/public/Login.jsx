@@ -30,11 +30,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen bg-[#F8F6F0] flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[#0EA5A5]/10 p-8 border border-white/50">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-600">SajiloSplit</h1>
-          <p className="text-gray-600 mt-2">Welcome back! Login to your account</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] flex items-center justify-center shadow-lg shadow-[#0EA5A5]/30">
+              <span className="text-white font-bold text-lg">S</span>
+            </div>
+            <h1 className="text-2xl font-bold text-[#0EA5A5]">SajiloSplit</h1>
+          </div>
+          <p className="text-slate-500 text-sm">Welcome back! Login to your account</p>
         </div>
 
         {error && (
@@ -45,69 +50,67 @@ const Login = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
+            <label className="block text-slate-700 text-sm font-medium mb-1.5">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="input-field pl-10"
+                className="w-full pl-10 pr-4 py-3 bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
                 placeholder="you@example.com"
+                autoComplete="username"
                 required
               />
             </div>
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-medium mb-2">
+            <label className="block text-slate-700 text-sm font-medium mb-1.5">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="input-field pl-10 pr-10"
+                className="w-full pl-10 pr-12 py-3 bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
                 placeholder="••••••••"
+                autoComplete="current-password"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-6">
-            <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700">
-              Forgot Password?
-            </Link>
-          </div>
-
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full btn-primary py-3 text-lg font-semibold disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] text-white py-3.5 rounded-xl font-semibold hover:shadow-[0_20px_60px_-15px_rgba(14,165,165,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
-            Sign Up
+        <div className="flex items-center justify-between mt-4 text-sm">
+          <Link to="/forgot-password" className="text-[#0EA5A5] hover:text-[#0B8A8A] font-medium transition-colors">
+            Forgot Password?
           </Link>
-        </p>
+          <Link to="/register" className="text-[#0EA5A5] hover:text-[#0B8A8A] font-medium transition-colors">
+            Create Account
+          </Link>
+        </div>
       </div>
     </div>
   );

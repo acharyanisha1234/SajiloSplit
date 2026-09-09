@@ -12,6 +12,8 @@ const mongoose = require('mongoose');
 // Get all emergency funds for user's groups
 router.get('/', protect, async (req, res) => {
   try {
+    console.log(' Fetching emergency funds for user:', req.user.id);
+    
     const groups = await Group.find({ members: req.user.id });
     const groupIds = groups.map(g => g._id);
 
@@ -21,12 +23,37 @@ router.get('/', protect, async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: funds
+      data: funds || []
     });
   } catch (error) {
+    console.error('Error fetching emergency funds:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to fetch emergency funds'
+    });
+  }
+});
+
+// Get emergency requests
+router.get('/requests', protect, async (req, res) => {
+  try {
+    console.log('Fetching emergency requests for user:', req.user.id);
+    
+    const requests = await EmergencyRequest.find({ user: req.user.id })
+      .populate('fund', 'name')
+      .populate('user', 'name email')
+      .populate('approvedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: requests || []
+    });
+  } catch (error) {
+    console.error('Error fetching emergency requests:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch emergency requests'
     });
   }
 });
@@ -34,7 +61,16 @@ router.get('/', protect, async (req, res) => {
 // Create emergency fund
 router.post('/', protect, async (req, res) => {
   try {
+    console.log('Creating emergency fund:', req.body);
+    
     const { name, targetAmount, description, groupId } = req.body;
+
+    if (!name || !targetAmount || !groupId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, targetAmount and groupId are required'
+      });
+    }
 
     const group = await Group.findById(groupId);
     if (!group) {
@@ -54,9 +90,9 @@ router.post('/', protect, async (req, res) => {
     const fund = await EmergencyFund.create({
       group: groupId,
       name,
-      targetAmount,
+      targetAmount: Number(targetAmount),
       currentAmount: 0,
-      description,
+      description: description || '',
       status: 'active'
     });
 
@@ -66,143 +102,10 @@ router.post('/', protect, async (req, res) => {
       data: fund
     });
   } catch (error) {
+    console.error(' Error creating emergency fund:', error);
     res.status(500).json({
       success: false,
-      message: error.message
-    });
-  }
-});
-
-// Get fund by ID
-router.get('/:id', protect, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const fund = await EmergencyFund.findById(id)
-      .populate('group', 'name members');
-
-    if (!fund) {
-      return res.status(404).json({
-        success: false,
-        message: 'Fund not found'
-      });
-    }
-
-    if (!fund.group.members.includes(req.user.id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not a member of this group'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: fund
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// Contribute to emergency fund
-router.post('/:id/contribute', protect, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { amount } = req.body;
-
-    const fund = await EmergencyFund.findById(id);
-    if (!fund) {
-      return res.status(404).json({
-        success: false,
-        message: 'Fund not found'
-      });
-    }
-
-    const group = await Group.findById(fund.group);
-    if (!group.members.includes(req.user.id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not a member of this group'
-      });
-    }
-
-    const wallet = await Wallet.findOne({ user: req.user.id });
-    if (!wallet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Wallet not found'
-      });
-    }
-
-    if (wallet.availableBalance < amount) {
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient balance'
-      });
-    }
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-      wallet.availableBalance -= amount;
-      wallet.balance -= amount;
-      await wallet.save({ session });
-
-      fund.currentAmount += amount;
-      await fund.save({ session });
-
-      await WalletTransaction.create([{
-        transactionId: generateTransactionId(),
-        sender: req.user.id,
-        amount,
-        type: 'group_contribution',
-        status: 'completed',
-        purpose: `Emergency fund contribution: ${fund.name}`,
-        group: fund.group
-      }], { session });
-
-      await session.commitTransaction();
-      session.endSession();
-
-      res.status(200).json({
-        success: true,
-        message: 'Contribution added successfully',
-        data: fund
-      });
-    } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      throw error;
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// Get emergency requests
-router.get('/requests', protect, async (req, res) => {
-  try {
-    const requests = await EmergencyRequest.find({ user: req.user.id })
-      .populate('fund', 'name')
-      .populate('user', 'name email')
-      .populate('approvedBy', 'name email')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      data: requests
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
+      message: error.message || 'Failed to create emergency fund'
     });
   }
 });
@@ -210,7 +113,16 @@ router.get('/requests', protect, async (req, res) => {
 // Create emergency request
 router.post('/requests', protect, async (req, res) => {
   try {
+    console.log(' Creating emergency request:', req.body);
+    
     const { fundId, amount, reason, description } = req.body;
+
+    if (!fundId || !amount || !reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'FundId, amount and reason are required'
+      });
+    }
 
     const fund = await EmergencyFund.findById(fundId);
     if (!fund) {
@@ -221,6 +133,13 @@ router.post('/requests', protect, async (req, res) => {
     }
 
     const group = await Group.findById(fund.group);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        message: 'Group not found'
+      });
+    }
+
     if (!group.members.includes(req.user.id)) {
       return res.status(403).json({
         success: false,
@@ -238,33 +157,32 @@ router.post('/requests', protect, async (req, res) => {
     const request = await EmergencyRequest.create({
       fund: fundId,
       user: req.user.id,
-      amount,
+      amount: Number(amount),
       reason,
-      description,
+      description: description || '',
       status: 'pending'
     });
 
+    // Send notification to group owner
     const io = global.io;
     if (io) {
-      const groupMembers = group.members;
-      groupMembers.forEach(memberId => {
-        io.to(`user-${memberId}`).emit('notification', {
-          type: 'emergency_request',
-          title: '🚨 Emergency Request',
-          message: `${req.user.name} requested Rs. ${amount} for "${reason}"`
-        });
+      io.to(`user-${group.owner}`).emit('notification', {
+        type: 'emergency_request',
+        title: ' Emergency Request',
+        message: `${req.user.name} requested Rs. ${amount} for "${reason}"`
       });
     }
 
     res.status(201).json({
       success: true,
-      message: 'Emergency request submitted',
+      message: 'Emergency request submitted successfully',
       data: request
     });
   } catch (error) {
+    console.error(' Error creating emergency request:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to create emergency request'
     });
   }
 });
@@ -274,6 +192,8 @@ router.put('/requests/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    console.log(`Updating emergency request ${id} to ${status}`);
 
     const request = await EmergencyRequest.findById(id);
     if (!request) {
@@ -338,14 +258,14 @@ router.put('/requests/:id', protect, async (req, res) => {
       if (io) {
         io.to(`user-${request.user}`).emit('notification', {
           type: 'emergency_response',
-          title: `🚨 Emergency Request ${status}`,
+          title: ` Emergency Request ${status}`,
           message: `Your emergency request has been ${status}`
         });
       }
 
       res.status(200).json({
         success: true,
-        message: `Request ${status}`,
+        message: `Request ${status} successfully`,
         data: request
       });
     } catch (error) {
@@ -354,9 +274,10 @@ router.put('/requests/:id', protect, async (req, res) => {
       throw error;
     }
   } catch (error) {
+    console.error(' Error updating emergency request:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to update request'
     });
   }
 });

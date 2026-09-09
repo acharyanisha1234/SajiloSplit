@@ -18,13 +18,16 @@ const emergencyRequestSchema = new mongoose.Schema({
   },
   reason: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   description: {
-    type: String
+    type: String,
+    default: ''
   },
   attachment: {
-    type: String
+    type: String,
+    default: ''
   },
   status: {
     type: String,
@@ -36,9 +39,6 @@ const emergencyRequestSchema = new mongoose.Schema({
     ref: 'User'
   },
   approvedAt: {
-    type: Date
-  },
-  rejectedAt: {
     type: Date
   }
 }, {

@@ -22,7 +22,8 @@ const emergencyFundSchema = new mongoose.Schema({
     min: 0
   },
   description: {
-    type: String
+    type: String,
+    default: ''
   },
   status: {
     type: String,

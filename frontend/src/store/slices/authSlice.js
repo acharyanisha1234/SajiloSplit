@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Login user
+// ===== Login =====
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
@@ -18,7 +18,7 @@ export const login = createAsyncThunk(
   }
 );
 
-// Register user
+// ===== Register =====
 export const register = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
@@ -31,7 +31,7 @@ export const register = createAsyncThunk(
   }
 );
 
-// Get current user
+// ===== Get Current User =====
 export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
@@ -50,7 +50,7 @@ export const getCurrentUser = createAsyncThunk(
   }
 );
 
-// Logout
+// ===== Logout =====
 export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
@@ -60,26 +60,76 @@ export const logout = createAsyncThunk(
   }
 );
 
+// ADD THIS - Update User
+export const updateUser = createAsyncThunk(
+  'auth/updateUser',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_URL}/users/profile`, userData);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Update failed' });
+    }
+  }
+);
+
+//  ADD THIS - Update Settings 
+export const updateSettings = createAsyncThunk(
+  'auth/updateSettings',
+  async (settingsData, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_URL}/users/settings`, settingsData);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Update settings failed' });
+    }
+  }
+);
+
+//  ADD THIS - Get Settings
+export const getSettings = createAsyncThunk(
+  'auth/getSettings',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/users/settings`);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Get settings failed' });
+    }
+  }
+);
+
+// Initial State 
 const initialState = {
   user: null,
   wallet: null,
+  settings: null,
   token: localStorage.getItem('token') || null,
   isLoading: false,
   error: null,
   isAuthenticated: false
 };
 
+//Slice 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    //  ADD THIS - Update user locally
+    setUser: (state, action) => {
+      state.user = action.payload;
+    },
+    // ADD THIS - Update settings locally
+    setSettings: (state, action) => {
+      state.settings = action.payload;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Login
+      // Login 
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -95,7 +145,8 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload?.message || 'Login failed';
       })
-      // Register
+
+      // Register 
       .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -107,7 +158,8 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload?.message || 'Registration failed';
       })
-      // Get current user
+
+      // Get Current User 
       .addCase(getCurrentUser.pending, (state) => {
         state.isLoading = true;
       })
@@ -117,6 +169,7 @@ const authSlice = createSlice({
           state.isAuthenticated = true;
           state.user = action.payload.user;
           state.wallet = action.payload.wallet;
+          state.settings = action.payload.user?.settings || null;
         }
       })
       .addCase(getCurrentUser.rejected, (state) => {
@@ -124,18 +177,68 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.user = null;
         state.wallet = null;
+        state.settings = null;
         state.token = null;
       })
-      // Logout
+
+      // Logout 
       .addCase(logout.fulfilled, (state) => {
         state.isAuthenticated = false;
         state.user = null;
         state.wallet = null;
+        state.settings = null;
         state.token = null;
         state.error = null;
+      })
+
+      // ADD THIS - Update User 
+      .addCase(updateUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user || action.payload;
+        state.settings = action.payload?.settings || state.settings;
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload?.message || 'Update failed';
+      })
+
+      //  ADD THIS - Update Settings
+      .addCase(updateSettings.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateSettings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.settings = action.payload;
+        if (state.user) {
+          state.user.settings = action.payload;
+        }
+      })
+      .addCase(updateSettings.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload?.message || 'Update settings failed';
+      })
+
+      // ADD THIS - Get Settings 
+      .addCase(getSettings.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getSettings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.settings = action.payload;
+        if (state.user) {
+          state.user.settings = action.payload;
+        }
+      })
+      .addCase(getSettings.rejected, (state) => {
+        state.isLoading = false;
       });
   }
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setUser, setSettings } = authSlice.actions;
 export default authSlice.reducer;

@@ -30,6 +30,67 @@ const upload = multer({
   }
 });
 
+
+
+// Get 2FA Status
+router.get('/2fa/status', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    res.status(200).json({
+      success: true,
+      enabled: user ? (user.twoFactorEnabled || false) : false
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Setup 2FA
+router.post('/2fa/setup', protect, async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: '2FA setup initialized',
+      secret: 'SAJILO_MOCK_2FA_SECRET_KEY'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get Active Sessions
+router.get('/sessions', protect, async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: [
+        {
+          id: 'current-session',
+          device: req.headers['user-agent'] || 'Web Browser',
+          ip: req.ip || req.connection.remoteAddress || '127.0.0.1',
+          lastActive: new Date(),
+          isCurrent: true
+        }
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// ==========================================
+// EXISTING ROUTES
+// ==========================================
+
 // Get all users (with search)
 router.get('/', protect, async (req, res) => {
   try {
