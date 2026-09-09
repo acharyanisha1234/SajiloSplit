@@ -133,4 +133,40 @@ const Notifications = () => {
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{notification.title}</
+                      <h3 className="font-semibold text-gray-900">{notification.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                      <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(notification.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!notification.isRead && (
+                        <button
+                          onClick={() => handleMarkAsRead(notification._id)}
+                          className="text-primary-600 hover:text-primary-700 text-sm flex items-center gap-1"
+                        >
+                          <Check className="w-4 h-4" /> Mark read
+                        </button>
+                      )}
+                      {notification.link && (
+                        <a
+                          href={notification.link}
+                          className="text-primary-600 hover:text-primary-700 text-sm"
+                        >
+                          View →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Notifications;
