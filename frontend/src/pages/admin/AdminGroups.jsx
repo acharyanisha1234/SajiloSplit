@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Users, Wallet, Calendar, Trash2, Eye } from 'lucide-react';
+import { Search, Users, Wallet, Calendar, Trash2, Eye, Group } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -39,7 +39,7 @@ const AdminGroups = () => {
   };
 
   const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(searchTerm.toLowerCase())
+    g.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -57,7 +57,6 @@ const AdminGroups = () => {
         <p className="text-gray-500">Manage all platform groups</p>
       </div>
 
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
@@ -69,7 +68,6 @@ const AdminGroups = () => {
         />
       </div>
 
-      {/* Groups Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredGroups.map((group) => (
           <div key={group._id} className="dashboard-card">
