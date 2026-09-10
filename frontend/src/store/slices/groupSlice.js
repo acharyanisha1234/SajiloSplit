@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// ===== Get user's groups =====
+// Get user's groups
 export const getGroups = createAsyncThunk(
   'groups/getGroups',
   async (_, { rejectWithValue }) => {
@@ -17,7 +17,7 @@ export const getGroups = createAsyncThunk(
   }
 );
 
-// ===== Create group =====
+// Create group 
 export const createGroup = createAsyncThunk(
   'groups/createGroup',
   async (data, { rejectWithValue }) => {
@@ -32,7 +32,7 @@ export const createGroup = createAsyncThunk(
   }
 );
 
-// ===== Get group details =====
+// Get group details
 export const getGroupDetails = createAsyncThunk(
   'groups/getGroupDetails',
   async (id, { rejectWithValue }) => {
@@ -45,7 +45,7 @@ export const getGroupDetails = createAsyncThunk(
   }
 );
 
-// ===== ✅ ADD THIS - Delete group =====
+// Delete group 
 export const deleteGroup = createAsyncThunk(
   'groups/deleteGroup',
   async (id, { rejectWithValue }) => {
@@ -60,7 +60,7 @@ export const deleteGroup = createAsyncThunk(
   }
 );
 
-// ===== ✅ ADD THIS - Update group =====
+//  ADD THIS - Update group
 export const updateGroup = createAsyncThunk(
   'groups/updateGroup',
   async ({ id, data }, { rejectWithValue }) => {
@@ -75,7 +75,7 @@ export const updateGroup = createAsyncThunk(
   }
 );
 
-// ===== ✅ ADD THIS - Leave group =====
+//  Leave group
 export const leaveGroup = createAsyncThunk(
   'groups/leaveGroup',
   async (id, { rejectWithValue }) => {
@@ -90,7 +90,7 @@ export const leaveGroup = createAsyncThunk(
   }
 );
 
-// ===== Initial State =====
+//  Initial State 
 const initialState = {
   groups: [],
   currentGroup: null,
@@ -98,7 +98,7 @@ const initialState = {
   error: null
 };
 
-// ===== Slice =====
+//  Slice
 const groupSlice = createSlice({
   name: 'groups',
   initialState,
@@ -112,7 +112,7 @@ const groupSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ===== Get Groups =====
+      // Get Groups 
       .addCase(getGroups.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -126,7 +126,7 @@ const groupSlice = createSlice({
         state.error = action.payload?.message || 'Failed to load groups';
       })
       
-      // ===== Create Group =====
+      // Create Group 
       .addCase(createGroup.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -142,7 +142,7 @@ const groupSlice = createSlice({
         state.error = action.payload?.message || 'Failed to create group';
       })
       
-      // ===== Get Group Details =====
+      // Get Group Details
       .addCase(getGroupDetails.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -156,7 +156,7 @@ const groupSlice = createSlice({
         state.error = action.payload?.message || 'Failed to load group details';
       })
       
-      // ===== ✅ ADD THIS - Delete Group =====
+      // ADD THIS - Delete Group
       .addCase(deleteGroup.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -173,7 +173,7 @@ const groupSlice = createSlice({
         state.error = action.payload?.message || 'Failed to delete group';
       })
       
-      // ===== ✅ ADD THIS - Update Group =====
+      // Update Group 
       .addCase(updateGroup.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -195,7 +195,7 @@ const groupSlice = createSlice({
         state.error = action.payload?.message || 'Failed to update group';
       })
       
-      // ===== ✅ ADD THIS - Leave Group =====
+      // Leave Group 
       .addCase(leaveGroup.pending, (state) => {
         state.isLoading = true;
         state.error = null;
