@@ -1,5 +1,3 @@
-// Theme system with CSS variables
-
 export const themes = {
   light: {
     // Backgrounds
