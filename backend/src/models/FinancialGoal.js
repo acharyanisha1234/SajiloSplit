@@ -1,4 +1,3 @@
-// models/FinancialGoal.js
 const mongoose = require('mongoose');
 
 const FinancialGoalSchema = new mongoose.Schema({
