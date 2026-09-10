@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    // ===== Navigation =====
+    // Navigation 
     dashboard: 'Dashboard',
     wallet: 'Wallet',
     groups: 'Groups',
@@ -15,7 +15,7 @@ export const translations = {
     logout: 'Logout',
     menu: 'Menu',
     
-    // ===== Dashboard =====
+    // Dashboard 
     goodMorning: 'Good Morning',
     goodAfternoon: 'Good Afternoon',
     goodEvening: 'Good Evening',
@@ -40,7 +40,7 @@ export const translations = {
     latestSplits: 'Your latest splits and direct transfers',
     search: 'Search splits, groups...',
     
-    // ===== Wallet =====
+    // Wallet 
     manageMoney: 'Manage your money securely',
     addMoney: 'Add Money',
     receive: 'Receive',
@@ -54,7 +54,7 @@ export const translations = {
     copyUserId: 'Copy User ID',
     copied: 'Copied!',
     
-    // ===== Groups =====
+    //  Groups 
     createGroup: 'Create Group',
     groupName: 'Group Name',
     description: 'Description',
@@ -67,7 +67,7 @@ export const translations = {
     noGroups: 'No groups yet',
     createFirstGroup: 'Create your first group to start sharing expenses',
     
-    // ===== Expenses =====
+    // Expenses
     addExpense: 'Add Expense',
     expenseTitle: 'Expense Title',
     amount: 'Amount',
@@ -79,7 +79,7 @@ export const translations = {
     shares: 'Shares',
     uploadReceipt: 'Upload receipt image',
     
-    // ===== Bills =====
+    // Bills
     billName: 'Bill Name',
     dueDate: 'Due Date',
     recurring: 'Recurring',
@@ -94,7 +94,7 @@ export const translations = {
     overdue: 'Overdue',
     upcoming: 'Upcoming',
     
-    // ===== Budgets =====
+    //  Budgets
     monthlyBudget: 'Monthly Budget',
     budget: 'Budget',
     spent: 'Spent',
@@ -103,7 +103,7 @@ export const translations = {
     overBudget: 'Over budget',
     budgetWarning: 'Budget Warning',
     
-    // ===== Settings =====
+    // Settings 
     preferences: 'Preferences',
     darkMode: 'Dark Mode',
     pushNotifications: 'Push Notifications',
@@ -120,7 +120,7 @@ export const translations = {
     language: 'Language',
     deleteAccount: 'Delete Account',
     
-    // ===== Security =====
+    // Security
     currentPassword: 'Current Password',
     newPassword: 'New Password',
     confirmPassword: 'Confirm New Password',
@@ -139,7 +139,7 @@ export const translations = {
     sessionLoggedOut: 'Device logged out',
     allDevicesLoggedOut: 'Logged out from all devices',
     
-    // ===== Delete Account =====
+    //  Delete Account
     deleteAccountWarning: 'Deleting your account is permanent.',
     deleteAccountData: 'This will permanently delete all your data including:',
     deleteAccountList: '• Personal information\n• Transaction history\n• Groups and expenses\n• Budgets and bills\n• Locked funds\n• Emergency funds\n• AI history\n• Preferences',
@@ -148,7 +148,7 @@ export const translations = {
     accountDeleted: 'Account deleted successfully',
     accountDeleteFailed: 'Failed to delete account',
     
-    // ===== Common =====
+    // Common 
     loading: 'Loading...',
     save: 'Save',
     cancel: 'Cancel',
@@ -176,7 +176,7 @@ export const translations = {
     deleted: 'Deleted successfully',
     created: 'Created successfully',
     
-    // ===== Notifications =====
+    // Notifications
     moneyReceived: 'Money Received',
     moneySent: 'Money Sent',
     groupInvitation: 'Group Invitation',
@@ -189,7 +189,7 @@ export const translations = {
     emergencyRequest: 'Emergency Request',
     securityAlert: 'Security Alert',
     
-    // ===== AI Assistant =====
+    // AI Assistant 
     aiAssistant: 'AI Assistant',
     askAI: 'Ask me anything about your finances',
     aiThinking: 'AI is thinking...',
@@ -200,7 +200,7 @@ export const translations = {
     budgetHelp: 'Budget Help',
     investmentAdvice: 'Investment Advice',
     
-    // ===== Errors =====
+    // Errors 
     errorOccurred: 'An error occurred',
     pleaseTryAgain: 'Please try again',
     contactSupport: 'Contact Support',
@@ -210,7 +210,7 @@ export const translations = {
   },
   
   ne: {
-    // ===== Navigation =====
+    // Navigation 
     dashboard: 'ड्यासबोर्ड',
     wallet: 'वालेट',
     groups: 'समूहहरू',
@@ -225,7 +225,7 @@ export const translations = {
     logout: 'लगआउट',
     menu: 'मेनु',
     
-    // ===== Dashboard =====
+    // Dashboard 
     goodMorning: 'शुभ प्रभात',
     goodAfternoon: 'शुभ दिउँसो',
     goodEvening: 'शुभ साँझ',
@@ -250,7 +250,7 @@ export const translations = {
     latestSplits: 'तपाईंको नवीनतम विभाजन र प्रत्यक्ष स्थानान्तरण',
     search: 'विभाजन, समूह खोज्नुहोस्...',
     
-    // ===== Wallet =====
+    //  Wallet 
     manageMoney: 'आफ्नो पैसा सुरक्षित रूपमा व्यवस्थापन गर्नुहोस्',
     addMoney: 'पैसा थप्नुहोस्',
     receive: 'प्राप्त गर्नुहोस्',
@@ -264,7 +264,7 @@ export const translations = {
     copyUserId: 'प्रयोगकर्ता आईडी प्रतिलिपि गर्नुहोस्',
     copied: 'प्रतिलिपि गरियो!',
     
-    // ===== Groups =====
+    // Groups
     createGroup: 'समूह सिर्जना गर्नुहोस्',
     groupName: 'समूहको नाम',
     description: 'विवरण',
@@ -277,7 +277,7 @@ export const translations = {
     noGroups: 'अहिलेसम्म कुनै समूह छैन',
     createFirstGroup: 'खर्च साझा गर्न आफ्नो पहिलो समूह सिर्जना गर्नुहोस्',
     
-    // ===== Expenses =====
+    // Expenses 
     addExpense: 'खर्च थप्नुहोस्',
     expenseTitle: 'खर्चको शीर्षक',
     amount: 'रकम',
@@ -289,7 +289,7 @@ export const translations = {
     shares: 'सेयरहरू',
     uploadReceipt: 'रसिदको फोटो अपलोड गर्नुहोस्',
     
-    // ===== Bills =====
+    // Bills 
     billName: 'बिलको नाम',
     dueDate: 'म्याद मिति',
     recurring: 'दोहोरिने',
@@ -304,7 +304,7 @@ export const translations = {
     overdue: 'म्याद गुज्रेको',
     upcoming: 'आउँदै गरेको',
     
-    // ===== Budgets =====
+    // Budgets 
     monthlyBudget: 'मासिक बजेट',
     budget: 'बजेट',
     spent: 'खर्च भयो',
@@ -313,7 +313,7 @@ export const translations = {
     overBudget: 'बजेट भन्दा बढी',
     budgetWarning: 'बजेट चेतावनी',
     
-    // ===== Settings =====
+    // Settings
     preferences: 'प्राथमिकताहरू',
     darkMode: 'डार्क मोड',
     pushNotifications: 'पुश सूचनाहरू',
@@ -330,7 +330,7 @@ export const translations = {
     language: 'भाषा',
     deleteAccount: 'खाता मेटाउनुहोस्',
     
-    // ===== Security =====
+    // Security 
     currentPassword: 'हालको पासवर्ड',
     newPassword: 'नयाँ पासवर्ड',
     confirmPassword: 'नयाँ पासवर्ड पुष्टि गर्नुहोस्',
@@ -349,7 +349,7 @@ export const translations = {
     sessionLoggedOut: 'उपकरण लगआउट गरियो',
     allDevicesLoggedOut: 'सबै उपकरणबाट लगआउट गरियो',
     
-    // ===== Delete Account =====
+    //  Delete Account 
     deleteAccountWarning: 'तपाईंको खाता मेटाउनु स्थायी हो।',
     deleteAccountData: 'यसले तपाईंको सबै डाटा स्थायी रूपमा मेटाउनेछ:',
     deleteAccountList: '• व्यक्तिगत जानकारी\n• कारोबार इतिहास\n• समूह र खर्चहरू\n• बजेट र बिलहरू\n• लक गरिएको रकम\n• आपतकालीन कोष\n• AI इतिहास\n• प्राथमिकताहरू',
@@ -358,7 +358,7 @@ export const translations = {
     accountDeleted: 'खाता सफलतापूर्वक मेटियो',
     accountDeleteFailed: 'खाता मेटाउन असफल भयो',
     
-    // ===== Common =====
+    //  Common 
     loading: 'लोड हुँदै...',
     save: 'सुरक्षित गर्नुहोस्',
     cancel: 'रद्द गर्नुहोस्',
@@ -386,7 +386,7 @@ export const translations = {
     deleted: 'सफलतापूर्वक मेटियो',
     created: 'सफलतापूर्वक सिर्जना गरियो',
     
-    // ===== Notifications =====
+    //Notification
     moneyReceived: 'पैसा प्राप्त भयो',
     moneySent: 'पैसा पठाइयो',
     groupInvitation: 'समूह निमन्त्रणा',
@@ -399,7 +399,7 @@ export const translations = {
     emergencyRequest: 'आपतकालीन अनुरोध',
     securityAlert: 'सुरक्षा चेतावनी',
     
-    // ===== AI Assistant =====
+    // AI Assistant 
     aiAssistant: 'AI सहायक',
     askAI: 'तपाईंको वित्तको बारेमा मलाई सोध्नुहोस्',
     aiThinking: 'AI सोच्दै छ...',
@@ -410,7 +410,7 @@ export const translations = {
     budgetHelp: 'बजेट सहायता',
     investmentAdvice: 'लगानी सल्लाह',
     
-    // ===== Errors =====
+    // Errors 
     errorOccurred: 'एउटा त्रुटि भयो',
     pleaseTryAgain: 'कृपया फेरि प्रयास गर्नुहोस्',
     contactSupport: 'सहायतालाई सम्पर्क गर्नुहोस्',
