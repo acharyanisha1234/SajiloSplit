@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// ===== Login =====
+//Login
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
@@ -18,7 +18,7 @@ export const login = createAsyncThunk(
   }
 );
 
-// ===== Register =====
+// Register 
 export const register = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
@@ -31,7 +31,7 @@ export const register = createAsyncThunk(
   }
 );
 
-// ===== Get Current User =====
+//  Get Current User 
 export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
@@ -50,7 +50,7 @@ export const getCurrentUser = createAsyncThunk(
   }
 );
 
-// ===== Logout =====
+//  Logout
 export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
