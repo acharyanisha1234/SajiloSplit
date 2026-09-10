@@ -1,4 +1,3 @@
-// Centralized translation system
 const translations = {
   en: {
     // Common
