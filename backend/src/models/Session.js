@@ -8,7 +8,7 @@ const sessionSchema = new mongoose.Schema({
   },
   deviceId: {
     type: String,
-    required: true
+    default: 'unknown'
   },
   deviceName: {
     type: String,
@@ -16,20 +16,23 @@ const sessionSchema = new mongoose.Schema({
   },
   deviceType: {
     type: String,
-    enum: ['web', 'mobile', 'tablet', 'desktop', 'api'],
     default: 'web'
   },
   ip: {
-    type: String
+    type: String,
+    default: 'Unknown IP'
   },
   userAgent: {
-    type: String
-  },
-  browser: {
-    type: String
+    type: String,
+    default: 'Unknown'
   },
   os: {
-    type: String
+    type: String,
+    default: 'Unknown OS'
+  },
+  browser: {
+    type: String,
+    default: 'Unknown Browser'
   },
   lastActive: {
     type: Date,
@@ -49,10 +52,7 @@ const sessionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
 sessionSchema.index({ user: 1 });
-sessionSchema.index({ deviceId: 1 });
 sessionSchema.index({ lastActive: -1 });
-sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Session', sessionSchema);
