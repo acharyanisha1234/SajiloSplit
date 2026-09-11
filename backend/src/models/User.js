@@ -2,18 +2,18 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  // Basic Info
+  //  Basic Info 
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   phone: { type: String, required: true, unique: true },
   password: { type: String, required: true, minlength: 6 },
 
-  // Role & Status
+  // Role & Status 
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   isActive: { type: Boolean, default: true },
   isSuspended: { type: Boolean, default: false },
 
-  // KYC Verification
+  //  KYC Verification 
   kyc: {
     status: { type: String, enum: ['pending', 'approved', 'rejected', 'not_submitted'], default: 'not_submitted' },
     documentType: { type: String, enum: ['citizenship', 'passport', 'driving_license'] },
@@ -28,21 +28,21 @@ const userSchema = new mongoose.Schema({
     submittedAt: { type: Date },
   },
 
-  // 2FA
+  //  2FA 
   twoFactor: {
     enabled: { type: Boolean, default: false },
     secret: { type: String },
     backupCodes: [{ type: String }],
   },
 
-  // Security
+  //  Security 
   security: {
     lastLogin: { type: Date },
     lastLoginIP: { type: String },
     loginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date },
     devices: [{
-      deviceId: { type: String, required: true },
+      deviceId: { type: String },
       deviceName: { type: String },
       deviceType: { type: String },
       browser: { type: String },
@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
   pinAttempts: { type: Number, default: 0 },
   pinLockUntil: { type: Date },
 
-  // ===== ✅ ADD THIS - User Settings (For Settings Page) =====
+  // User Settings (For Settings Page)
   settings: {
     // Theme preference
     theme: { 
@@ -74,7 +74,7 @@ const userSchema = new mongoose.Schema({
     // Language preference
     language: { 
       type: String, 
-      default: 'English' 
+      default: 'en' 
     },
     // Currency preference
     currency: { 
@@ -113,7 +113,12 @@ const userSchema = new mongoose.Schema({
     },
   },
 
-  // Verification
+  // Profile
+  profileImage: { type: String },
+  address: { type: String },
+  dob: { type: Date },
+
+  //  Verification
   isVerified: { type: Boolean, default: false },
   verificationToken: { type: String },
   verificationTokenExpire: { type: Date },
@@ -124,48 +129,67 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Pre-save hooks
+// Pre-save Hook - Hash Password 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// Methods
+//  Method - Compare Password 
 userSchema.methods.comparePassword = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 
+// Method - Check if Account is Locked
 userSchema.methods.isLocked = function() {
-  return this.security.lockUntil && this.security.lockUntil > Date.now();
+  return this.security?.lockUntil && this.security.lockUntil > Date.now();
 };
 
+// Method - Increment Login Attempts
 userSchema.methods.incrementLoginAttempts = async function() {
-  this.security.loginAttempts += 1;
+  if (!this.security) this.security = {};
+  this.security.loginAttempts = (this.security.loginAttempts || 0) + 1;
   if (this.security.loginAttempts >= 5) {
     this.security.lockUntil = Date.now() + 30 * 60 * 1000; // 30 minutes
   }
   await this.save();
 };
 
+//  Method - Reset Login Attemp
 userSchema.methods.resetLoginAttempts = async function() {
+  if (!this.security) this.security = {};
   this.security.loginAttempts = 0;
   this.security.lockUntil = null;
   await this.save();
 };
 
-// ===== ADD THIS - Get settings method =====
+//  Method - Get Settings 
 userSchema.methods.getSettings = function() {
-  return this.settings;
+  const defaultSettings = {
+    theme: 'light',
+    language: 'en',
+    currency: 'NPR',
+    notifications: true,
+    soundEffects: true,
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true,
+    loginAlerts: true,
+    transactionAlerts: true
+  };
+  return { ...defaultSettings, ...(this.settings || {}) };
 };
 
-// ===== ADD THIS - Update settings method =====
+// Method - Update Settings 
 userSchema.methods.updateSettings = function(updates) {
   const allowed = [
     'theme', 'language', 'currency', 'notifications', 'soundEffects',
     'emailNotifications', 'smsNotifications', 'pushNotifications',
     'loginAlerts', 'transactionAlerts'
   ];
+  
+  if (!this.settings) this.settings = {};
   
   for (const key of allowed) {
     if (updates[key] !== undefined) {
@@ -175,7 +199,7 @@ userSchema.methods.updateSettings = function(updates) {
   return this.save();
 };
 
-//  ADD THIS - Indexes
+//  Indexes for Fast Queries
 userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
 userSchema.index({ 'security.devices.deviceId': 1 });
