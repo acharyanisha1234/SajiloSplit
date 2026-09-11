@@ -12,6 +12,33 @@ const generateToken = (id) => {
   });
 };
 
+// Get device name from user agent
+const getDeviceName = (userAgent) => {
+  if (!userAgent) return 'Unknown Device';
+  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) return 'Chrome Browser';
+  if (userAgent.includes('Firefox')) return 'Firefox Browser';
+  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari Browser';
+  if (userAgent.includes('Edg')) return 'Edge Browser';
+  if (userAgent.includes('Android')) return 'Android Phone';
+  if (userAgent.includes('iPhone')) return 'iPhone';
+  if (userAgent.includes('iPad')) return 'iPad';
+  if (userAgent.includes('Windows')) return 'Windows PC';
+  if (userAgent.includes('Mac OS')) return 'Mac Computer';
+  if (userAgent.includes('Linux')) return 'Linux Computer';
+  return 'Unknown Device';
+};
+
+// Get OS from user agent
+const getOS = (userAgent) => {
+  if (!userAgent) return 'Unknown OS';
+  if (userAgent.includes('Windows')) return 'Windows';
+  if (userAgent.includes('Mac OS')) return 'macOS';
+  if (userAgent.includes('Android')) return 'Android';
+  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
+  if (userAgent.includes('Linux')) return 'Linux';
+  return 'Unknown OS';
+};
+
 // @desc    Register user
 const register = async (req, res) => {
   try {
@@ -56,7 +83,7 @@ const register = async (req, res) => {
     try {
       await sendVerificationEmail(user.email, user.name, verificationToken);
     } catch (emailError) {
-      console.error('Email send error:', emailError.message);
+      console.error(' Email send error:', emailError.message);
     }
 
     res.status(201).json({
@@ -117,29 +144,34 @@ const login = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    // ADD THIS - Save session
+    // ===== SAVE SESSION =====
     try {
+      const userAgent = req.headers['user-agent'] || 'Unknown';
       const deviceId = req.body.deviceId || crypto.randomBytes(16).toString('hex');
-      const decoded = jwt.decode(token);
-      
+      const deviceName = getDeviceName(userAgent);
+      const os = getOS(userAgent);
+
+      // Delete old sessions for this device
+      await Session.deleteMany({ user: user._id, deviceId });
+
+      // Create new session
       await Session.create({
         user: user._id,
-        deviceId: deviceId,
-        deviceName: req.body.deviceName || req.headers['user-agent'] || 'Unknown Device',
+        deviceId,
+        deviceName,
         deviceType: 'web',
-        ip: req.ip || req.connection.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        browser: req.headers['user-agent']?.split(' ')[0] || 'Unknown',
+        ip: req.ip || req.connection.remoteAddress || '127.0.0.1',
+        userAgent,
+        os,
+        browser: deviceName,
         lastActive: new Date(),
         isCurrent: true,
-        token: token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        token
       });
-      
+
       console.log('Session saved for user:', user.email);
     } catch (sessionError) {
       console.error('Session save error:', sessionError.message);
-      // Don't block login if session save fails
     }
 
     res.status(200).json({
@@ -162,7 +194,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error(' Login error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'
@@ -173,14 +205,14 @@ const login = async (req, res) => {
 // @desc    Logout user
 const logout = async (req, res) => {
   try {
-    // ADD THIS - Delete current session
+    // Delete current session
     try {
       const authHeader = req.headers.authorization;
       const token = authHeader?.split(' ')[1];
-      
+
       if (token) {
-        await Session.deleteOne({ token: token });
-        console.log('Session deleted on logout');
+        await Session.deleteOne({ token });
+        console.log(' Session deleted on logout');
       }
     } catch (sessionError) {
       console.error('Session delete error:', sessionError.message);
@@ -204,14 +236,14 @@ const getMe = async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     const wallet = await Wallet.findOne({ user: req.user.id });
 
-    // ADD THIS - Update session lastActive
+    // Update session lastActive
     try {
       const authHeader = req.headers.authorization;
       const token = authHeader?.split(' ')[1];
-      
+
       if (token) {
         await Session.updateOne(
-          { token: token },
+          { token },
           { lastActive: new Date() }
         );
       }
@@ -345,7 +377,7 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user.id);
-    
+
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({
@@ -357,12 +389,12 @@ const changePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    //  ADD THIS - Invalidate all sessions after password change 
+    // Delete all sessions after password change
     try {
       await Session.deleteMany({ user: req.user.id });
       console.log('All sessions invalidated after password change');
     } catch (sessionError) {
-      console.error(' Session delete error:', sessionError.message);
+      console.error('Session delete error:', sessionError.message);
     }
 
     res.status(200).json({
@@ -377,10 +409,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-// ADD THIS - Create Session Model if not exists
-// Make sure Session model is imported at top
-
-// MAKE SURE ALL FUNCTIONS ARE EXPORTED
 module.exports = {
   register,
   login,
