@@ -93,7 +93,10 @@ const Settings = () => {
     try {
       const response = await axios.get('/api/users/sessions');
       const sessionsData = response.data?.data || [];
-      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setSessions(Array.isArray(sessionsData) ? sessionsData.map((session) => ({
+        ...session,
+        deviceName: session.deviceName || session.browser || 'Computer'
+      })) : []);
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
       setSessions([]);

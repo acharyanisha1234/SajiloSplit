@@ -7,6 +7,8 @@ const getSavedLanguage = async () => {
   // Check localStorage first
   const localLang = localStorage.getItem('language');
   if (localLang) return localLang;
+
+  if (!localStorage.getItem('token')) return 'en';
   
   // Try to get from backend
   try {
@@ -51,10 +53,12 @@ export const LanguageProvider = ({ children }) => {
     document.documentElement.lang = newLang;
     
     // Save to backend
-    try {
-      await axios.put('/api/users/settings', { language: newLang });
-    } catch (error) {
-      console.log('Could not save language to backend');
+    if (localStorage.getItem('token')) {
+      try {
+        await axios.put('/api/users/settings', { language: newLang });
+      } catch (error) {
+        console.log('Could not save language to backend');
+      }
     }
     
     // Dispatch custom event

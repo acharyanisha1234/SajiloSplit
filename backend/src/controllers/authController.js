@@ -4,39 +4,13 @@ const Session = require('../models/Session');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { getDeviceInfo } = require('../utils/device');
 
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
-};
-
-// Get device name from user agent
-const getDeviceName = (userAgent) => {
-  if (!userAgent) return 'Unknown Device';
-  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) return 'Chrome Browser';
-  if (userAgent.includes('Firefox')) return 'Firefox Browser';
-  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari Browser';
-  if (userAgent.includes('Edg')) return 'Edge Browser';
-  if (userAgent.includes('Android')) return 'Android Phone';
-  if (userAgent.includes('iPhone')) return 'iPhone';
-  if (userAgent.includes('iPad')) return 'iPad';
-  if (userAgent.includes('Windows')) return 'Windows PC';
-  if (userAgent.includes('Mac OS')) return 'Mac Computer';
-  if (userAgent.includes('Linux')) return 'Linux Computer';
-  return 'Unknown Device';
-};
-
-// Get OS from user agent
-const getOS = (userAgent) => {
-  if (!userAgent) return 'Unknown OS';
-  if (userAgent.includes('Windows')) return 'Windows';
-  if (userAgent.includes('Mac OS')) return 'macOS';
-  if (userAgent.includes('Android')) return 'Android';
-  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
-  if (userAgent.includes('Linux')) return 'Linux';
-  return 'Unknown OS';
 };
 
 // @desc    Register user
@@ -110,7 +84,8 @@ const register = async (req, res) => {
 // @desc    Login user
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
 
     if (!email || !password) {
       return res.status(400).json({
@@ -148,8 +123,7 @@ const login = async (req, res) => {
     try {
       const userAgent = req.headers['user-agent'] || 'Unknown';
       const deviceId = req.body.deviceId || crypto.randomBytes(16).toString('hex');
-      const deviceName = getDeviceName(userAgent);
-      const os = getOS(userAgent);
+      const deviceInfo = getDeviceInfo(userAgent);
 
       // Delete old sessions for this device
       await Session.deleteMany({ user: user._id, deviceId });
@@ -158,12 +132,12 @@ const login = async (req, res) => {
       await Session.create({
         user: user._id,
         deviceId,
-        deviceName,
-        deviceType: 'web',
+        deviceName: deviceInfo.deviceName,
+        deviceType: deviceInfo.deviceType,
         ip: req.ip || req.connection.remoteAddress || '127.0.0.1',
         userAgent,
-        os,
-        browser: deviceName,
+        os: deviceInfo.os,
+        browser: deviceInfo.browser,
         lastActive: new Date(),
         isCurrent: true,
         token

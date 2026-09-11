@@ -56,14 +56,19 @@ const ProtectedRoute = ({ children, allowedRoles = ['user'] }) => {
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, authChecked } = useSelector((state) => state.auth);
+  const authenticatedPath = user?.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+
+  if (!authChecked) {
+    return null;
+  }
 
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
-      <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" />} />
+      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={authenticatedPath} />} />
+      <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to={authenticatedPath} />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
 

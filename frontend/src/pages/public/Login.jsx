@@ -24,8 +24,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(login(formData));
-    if (result.payload?.user) {
-      navigate('/dashboard');
+    if (login.fulfilled.match(result)) {
+      navigate(result.payload.user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     }
   };
 
@@ -60,7 +60,7 @@ const Login = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
+                className="w-full pl-10 pr-4 py-3 text-primary bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
                 placeholder="you@example.com"
                 autoComplete="username"
                 required
@@ -79,7 +79,7 @@ const Login = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-12 py-3 bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
+                className="w-full pl-10 pr-12 py-3 text-primary bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
                 placeholder="••••••••"
                 autoComplete="current-password"
                 required

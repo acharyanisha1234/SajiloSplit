@@ -106,6 +106,7 @@ const initialState = {
   settings: null,
   token: localStorage.getItem('token') || null,
   isLoading: false,
+  authChecked: false,
   error: null,
   isAuthenticated: false
 };
@@ -136,6 +137,7 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.authChecked = true;
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.wallet = action.payload.wallet;
@@ -165,6 +167,7 @@ const authSlice = createSlice({
       })
       .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.authChecked = true;
         if (action.payload) {
           state.isAuthenticated = true;
           state.user = action.payload.user;
@@ -174,6 +177,7 @@ const authSlice = createSlice({
       })
       .addCase(getCurrentUser.rejected, (state) => {
         state.isLoading = false;
+        state.authChecked = true;
         state.isAuthenticated = false;
         state.user = null;
         state.wallet = null;

@@ -76,6 +76,8 @@ const getSavedTheme = async () => {
   // First check localStorage
   const localTheme = localStorage.getItem('theme');
   if (localTheme) return localTheme;
+
+  if (!localStorage.getItem('token')) return 'light';
   
   // If not in localStorage, try to get from backend
   try {
@@ -134,10 +136,12 @@ export const ThemeProvider = ({ children }) => {
     applyTheme(newTheme);
     
     // Save to backend
-    try {
-      await axios.put('/api/users/settings', { theme: newTheme });
-    } catch (error) {
-      console.log('Could not save theme to backend');
+    if (localStorage.getItem('token')) {
+      try {
+        await axios.put('/api/users/settings', { theme: newTheme });
+      } catch (error) {
+        console.log('Could not save theme to backend');
+      }
     }
     
     // Dispatch custom event for components

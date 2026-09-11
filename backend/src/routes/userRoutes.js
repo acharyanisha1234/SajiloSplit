@@ -6,6 +6,7 @@ const Session = require('../models/Session');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const { getDeviceInfo } = require('../utils/device');
 
 
 // MULTER CONFIGURATION
@@ -37,31 +38,6 @@ const upload = multer({
 // ==========================================
 // HELPER FUNCTIONS
 // ==========================================
-
-const getDeviceName = (userAgent) => {
-  if (!userAgent) return 'Unknown Device';
-  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) return 'Chrome Browser';
-  if (userAgent.includes('Firefox')) return 'Firefox Browser';
-  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari Browser';
-  if (userAgent.includes('Edg')) return 'Edge Browser';
-  if (userAgent.includes('Android')) return 'Android Phone';
-  if (userAgent.includes('iPhone')) return 'iPhone';
-  if (userAgent.includes('iPad')) return 'iPad';
-  if (userAgent.includes('Windows')) return 'Windows PC';
-  if (userAgent.includes('Mac OS')) return 'Mac Computer';
-  if (userAgent.includes('Linux')) return 'Linux Computer';
-  return 'Unknown Device';
-};
-
-const getOS = (userAgent) => {
-  if (!userAgent) return 'Unknown OS';
-  if (userAgent.includes('Windows')) return 'Windows';
-  if (userAgent.includes('Mac OS')) return 'macOS';
-  if (userAgent.includes('Android')) return 'Android';
-  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
-  if (userAgent.includes('Linux')) return 'Linux';
-  return 'Unknown OS';
-};
 
 // ==========================================
 // 2FA ROUTES
@@ -212,14 +188,15 @@ router.get('/sessions', protect, async (req, res) => {
 
     // If no sessions in DB, return current session
     if (sessions.length === 0) {
+      const deviceInfo = getDeviceInfo(req.headers['user-agent']);
       return res.status(200).json({
         success: true,
         data: [
           {
             id: 'current-session',
-            deviceName: getDeviceName(req.headers['user-agent']),
+            deviceName: deviceInfo.deviceName,
             ip: req.ip || req.connection.remoteAddress || '127.0.0.1',
-            os: getOS(req.headers['user-agent']),
+            os: deviceInfo.os,
             lastActive: new Date(),
             isCurrent: true
           }
@@ -231,11 +208,11 @@ router.get('/sessions', protect, async (req, res) => {
       id: session._id,
       deviceName: session.deviceName && session.deviceName !== 'Unknown Device'
         ? session.deviceName
-        : getDeviceName(session.userAgent),
+        : getDeviceInfo(session.userAgent || (session.token === currentToken ? req.headers['user-agent'] : '')).deviceName,
       ip: session.ip || 'Unknown IP',
       os: session.os && session.os !== 'Unknown OS'
         ? session.os
-        : getOS(session.userAgent),
+        : getDeviceInfo(session.userAgent || (session.token === currentToken ? req.headers['user-agent'] : '')).os,
       lastActive: session.lastActive,
       isCurrent: session.token === currentToken || session.isCurrent
     }));
