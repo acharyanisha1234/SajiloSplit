@@ -12,4 +12,14 @@ export default defineConfig({
       },
     },
   },
+  // Suppress deprecation warnings
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    exclude: [],
+  },
+  // Log level
+  logLevel: 'info',
 });
