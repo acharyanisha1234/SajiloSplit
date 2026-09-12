@@ -1,29 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, X } from 'lucide-react';
+import { ArrowLeft, Camera, X, QrCode, Upload } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import toast from 'react-hot-toast';
 
 const QRScanner = () => {
   const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [scannedData, setScannedData] = useState(null);
+  const scannerRef = useRef(null);
+  const html5QrCodeRef = useRef(null);
 
-  // Simulated QR scan
-  const handleScan = () => {
+  const startScan = async () => {
     setScanning(true);
-    // Simulate scanning delay
-    setTimeout(() => {
-      const mockData = {
-        userId: 'user123',
-        name: 'John Doe',
-        email: 'john@example.com',
-        amount: 0
-      };
-      setScannedData(mockData);
+    try {
+      const html5QrCode = new Html5Qrcode('qr-reader');
+      html5QrCodeRef.current = html5QrCode;
+
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          // Success callback
+          try {
+            const data = JSON.parse(decodedText);
+            setScannedData(data);
+            stopScan();
+            toast.success('QR Code scanned!');
+          } catch (e) {
+            toast.error('Invalid QR Code');
+          }
+        },
+        () => {
+          // Error callback - ignore
+        }
+      );
+    } catch (err) {
+      toast.error('Camera access denied');
       setScanning(false);
-      toast.success('QR Code scanned successfully!');
-    }, 2000);
+    }
   };
+
+  const stopScan = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current.clear();
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    setScanning(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopScan();
+    };
+  }, []);
 
   const handleSendPayment = () => {
     navigate('/send-money', { state: { receiver: scannedData } });
@@ -32,92 +69,67 @@ const QRScanner = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-6 h-6" />
+        <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
+          <ArrowLeft className="w-6 h-6 text-slate-600 dark:text-slate-300" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">QR Scanner</h1>
-          <p className="text-gray-500">Scan QR code to pay</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">QR Scanner</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Scan QR code to pay</p>
         </div>
       </div>
 
-      <div className="dashboard-card max-w-md mx-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 max-w-md mx-auto">
         {/* Scanner Area */}
-        <div 
-          className="relative bg-gray-900 rounded-xl overflow-hidden aspect-square flex items-center justify-center cursor-pointer"
-          onClick={handleScan}
-        >
-          {scanning ? (
-            <div className="text-center text-white">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
-              <p className="mt-4">Scanning...</p>
+        <div className="relative bg-slate-900 rounded-xl overflow-hidden aspect-square mb-4">
+          <div id="qr-reader" className="w-full h-full" ref={scannerRef} />
+          
+          {!scanning && !scannedData && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white cursor-pointer" onClick={startScan}>
+              <Camera className="w-16 h-16 mb-4 opacity-50" />
+              <p className="text-lg font-semibold">Tap to scan QR Code</p>
+              <p className="text-sm text-slate-400 mt-2">Position QR code within frame</p>
             </div>
-          ) : scannedData ? (
-            <div className="text-center text-white p-8">
-              <div className="bg-green-500 rounded-full p-4 inline-block mb-4">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          )}
+
+          {scannedData && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-slate-900/95 p-6">
+              <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mb-4">
+                <QrCode className="w-8 h-8 text-white" />
               </div>
               <p className="text-lg font-semibold">{scannedData.name}</p>
-              <p className="text-sm text-gray-400">{scannedData.email}</p>
+              <p className="text-sm text-slate-400">{scannedData.email}</p>
               <button
                 onClick={handleSendPayment}
-                className="mt-4 btn-primary px-6 py-2"
+                className="mt-4 px-6 py-2 bg-[#0EA5A5] rounded-lg font-semibold hover:bg-[#0B8A8A] transition"
               >
                 Send Money
               </button>
             </div>
-          ) : (
-            <div className="text-center text-white">
-              <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Tap to scan QR Code</p>
-              <p className="text-sm text-gray-400 mt-2">Position QR code within the frame</p>
-            </div>
           )}
         </div>
 
-        {/* Scan Info */}
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>How to scan:</strong> Tap the scanner area above and point your camera at
-            any SajiloSplit user's QR code to send them money instantly.
-          </p>
-        </div>
+        {scanning && (
+          <button
+            onClick={stopScan}
+            className="w-full py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition flex items-center justify-center gap-2"
+          >
+            <X className="w-5 h-5" /> Stop Scanning
+          </button>
+        )}
 
-        {/* Scanned History (Simulated) */}
-        <div className="mt-4">
-          <h3 className="font-medium text-gray-900 mb-2">Recent Scans</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-purple-600 font-semibold">S</span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Suman Rai</p>
-                  <p className="text-sm text-gray-500">suman@example.com</p>
-                </div>
-              </div>
-              <button className="text-primary-600 hover:text-primary-700 text-sm">
-                Pay
-              </button>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-green-600 font-semibold">R</span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Riya Maharjan</p>
-                  <p className="text-sm text-gray-500">riya@example.com</p>
-                </div>
-              </div>
-              <button className="text-primary-600 hover:text-primary-700 text-sm">
-                Pay
-              </button>
-            </div>
-          </div>
+        {!scanning && !scannedData && (
+          <button
+            onClick={startScan}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] text-white font-semibold hover:shadow-xl transition flex items-center justify-center gap-2"
+          >
+            <Camera className="w-5 h-5" /> Start Camera
+          </button>
+        )}
+
+        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <p className="text-sm text-blue-800 dark:text-blue-400">
+            <strong>How to scan:</strong> Tap "Start Camera" and point at any SajiloSplit user's QR code to send them money.
+          </p>
         </div>
       </div>
     </div>
