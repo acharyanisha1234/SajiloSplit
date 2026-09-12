@@ -41,7 +41,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 
 // Protected Route Component
-const ProtectedRoute = ({ children, allowedRoles = ['user'] }) => {
+const ProtectedRoute = ({ children, allowedRoles = ['user', 'admin'] }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   
   if (!isAuthenticated) {
@@ -74,7 +74,7 @@ const AppRoutes = () => {
 
       {/* User Routes */}
       <Route element={
-        <ProtectedRoute>
+        <ProtectedRoute allowedRoles={['user', 'admin']}>
           <UserLayout />
         </ProtectedRoute>
       }>
@@ -112,9 +112,11 @@ const AppRoutes = () => {
         <Route path="/admin/disputes" element={<AdminDisputes />} />
         <Route path="/admin/categories" element={<AdminCategories />} />
         <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+        <Route path="/admin/settings" element={<Settings />} />
+        <Route path="/admin/notifications" element={<Notifications />} />
       </Route>
     </Routes>
   );
 };
 
-export default AppRoutes; 
+export default AppRoutes;

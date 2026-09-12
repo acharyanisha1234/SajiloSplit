@@ -71,7 +71,7 @@ const Register = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-3 bg-[#FDF6F0]/50 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] transition-all duration-300 placeholder:text-slate-400"
-                placeholder="John Doe"
+                placeholder="Enter your Name"
                 autoComplete="name"
                 required
               />

@@ -9,18 +9,25 @@ const categorySchema = new mongoose.Schema({
   },
   icon: {
     type: String,
-    default: '📌'
+    default: 'category'
   },
   color: {
     type: String,
-    default: '#16a34a'
+    default: '#0EA5A5'
   },
   isDefault: {
     type: Boolean,
     default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
 });
+
+categorySchema.index({ name: 1 });
+categorySchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('Category', categorySchema);

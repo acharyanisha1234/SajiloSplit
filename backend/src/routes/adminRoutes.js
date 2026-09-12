@@ -9,39 +9,63 @@ const Group = require('../models/Group');
 const Dispute = require('../models/Dispute');
 const AuditLog = require('../models/AuditLog');
 const EmergencyFund = require('../models/EmergencyFund');
+const Category = require('../models/Category');
 
 // All admin routes require admin role
 router.use(protect);
 router.use(authorize('admin'));
 
-// Get admin dashboard stats
+// HELPER FUNCTION - Non-blocking audit log
+// Wrap audit log creation in try/catch so it doesn't break main request
+const createAuditLog = async (data) => {
+  try {
+    await AuditLog.create(data);
+  } catch (error) {
+    console.error('Audit log error (non-blocking):', error.message);
+  }
+};
+
+// ===== Get admin dashboard stats =====
 router.get('/stats', async (req, res) => {
   try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const [
       totalUsers,
       activeUsers,
       suspendedUsers,
+      newUsersToday,
       totalGroups,
       totalTransactions,
+      transactionsToday,
       pendingDisputes,
       activeEmergencyFunds
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ isActive: true, isSuspended: false }),
       User.countDocuments({ isSuspended: true }),
+      User.countDocuments({ createdAt: { $gte: today } }),
       Group.countDocuments(),
       WalletTransaction.countDocuments(),
+      WalletTransaction.countDocuments({ createdAt: { $gte: today } }),
       Dispute.countDocuments({ status: 'open' }),
       EmergencyFund.countDocuments({ status: 'active' })
     ]);
 
     // Calculate total transaction volume
-    const transactions = await WalletTransaction.aggregate([
+    const volumeResult = await WalletTransaction.aggregate([
       { $match: { status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
 
-    const totalVolume = transactions.length > 0 ? transactions[0].total : 0;
+    const todayVolumeResult = await WalletTransaction.aggregate([
+      { $match: { status: 'completed', createdAt: { $gte: today } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    const totalVolume = volumeResult.length > 0 ? volumeResult[0].total : 0;
+    const volumeToday = todayVolumeResult.length > 0 ? todayVolumeResult[0].total : 0;
 
     res.status(200).json({
       success: true,
@@ -49,9 +73,12 @@ router.get('/stats', async (req, res) => {
         totalUsers,
         activeUsers,
         suspendedUsers,
+        newUsersToday,
         totalGroups,
         totalTransactions,
+        transactionsToday,
         totalVolume,
+        volumeToday,
         pendingDisputes,
         activeEmergencyFunds
       }
@@ -67,9 +94,11 @@ router.get('/stats', async (req, res) => {
 // Get all users
 router.get('/users', async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit) || 100;
     const users = await User.find()
       .select('-password')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limit);
 
     res.status(200).json({
       success: true,
@@ -83,7 +112,7 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// Suspend user
+//  Suspend user 
 router.put('/users/:id/suspend', async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,12 +136,13 @@ router.put('/users/:id/suspend', async (req, res) => {
     user.isActive = false;
     await user.save();
 
-    // Create audit log
-    await AuditLog.create({
+    // Non-blocking audit log
+    await createAuditLog({
       user: req.user.id,
       action: 'suspend',
       details: `User ${user.email} suspended by admin`,
-      ip: req.ip
+      ip: req.ip,
+      severity: 'warning'
     });
 
     res.status(200).json({
@@ -145,12 +175,13 @@ router.put('/users/:id/activate', async (req, res) => {
     user.isActive = true;
     await user.save();
 
-    // Create audit log
-    await AuditLog.create({
+  
+    await createAuditLog({
       user: req.user.id,
       action: 'activate',
       details: `User ${user.email} activated by admin`,
-      ip: req.ip
+      ip: req.ip,
+      severity: 'info'
     });
 
     res.status(200).json({
@@ -166,32 +197,23 @@ router.put('/users/:id/activate', async (req, res) => {
   }
 });
 
-// Get all transactions
+//  Get all transactions 
 router.get('/transactions', async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = 0;
 
-    const [transactions, total] = await Promise.all([
-      WalletTransaction.find()
-        .populate('sender', 'name email')
-        .populate('receiver', 'name email')
-        .populate('group', 'name')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      WalletTransaction.countDocuments()
-    ]);
+    const transactions = await WalletTransaction.find()
+      .populate('sender', 'name email')
+      .populate('receiver', 'name email')
+      .populate('group', 'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       success: true,
-      data: transactions,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+      data: transactions
     });
   } catch (error) {
     res.status(500).json({
@@ -221,7 +243,7 @@ router.get('/groups', async (req, res) => {
   }
 });
 
-// Delete group
+// Delete group 
 router.delete('/groups/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -234,14 +256,16 @@ router.delete('/groups/:id', async (req, res) => {
       });
     }
 
+    const groupName = group.name;
     await group.deleteOne();
 
-    // Create audit log
-    await AuditLog.create({
+  
+    await createAuditLog({
       user: req.user.id,
       action: 'delete',
-      details: `Group "${group.name}" deleted by admin`,
-      ip: req.ip
+      details: `Group "${groupName}" deleted by admin`,
+      ip: req.ip,
+      severity: 'warning'
     });
 
     res.status(200).json({
@@ -276,7 +300,7 @@ router.get('/disputes', async (req, res) => {
   }
 });
 
-// Update dispute status
+//  Update dispute status 
 router.put('/disputes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -294,12 +318,13 @@ router.put('/disputes/:id', async (req, res) => {
     dispute.resolvedAt = status === 'resolved' || status === 'rejected' ? new Date() : undefined;
     await dispute.save();
 
-    // Create audit log
-    await AuditLog.create({
+    
+    await createAuditLog({
       user: req.user.id,
       action: status === 'resolved' ? 'approve' : 'reject',
       details: `Dispute ${id} ${status} by admin`,
-      ip: req.ip
+      ip: req.ip,
+      severity: 'info'
     });
 
     res.status(200).json({
@@ -318,27 +343,15 @@ router.put('/disputes/:id', async (req, res) => {
 // Get audit logs
 router.get('/audit-logs', async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [logs, total] = await Promise.all([
-      AuditLog.find()
-        .populate('user', 'name email')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      AuditLog.countDocuments()
-    ]);
+    const limit = parseInt(req.query.limit) || 100;
+    const logs = await AuditLog.find()
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(limit);
 
     res.status(200).json({
       success: true,
-      data: logs,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+      data: logs
     });
   } catch (error) {
     res.status(500).json({
@@ -348,10 +361,9 @@ router.get('/audit-logs', async (req, res) => {
   }
 });
 
-// Get categories (admin management)
+// Get categories (admin management) 
 router.get('/categories', async (req, res) => {
   try {
-    const Category = require('../models/Category');
     const categories = await Category.find().sort({ name: 1 });
 
     res.status(200).json({
@@ -366,11 +378,17 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// Create category
+// ===== Create category =====
 router.post('/categories', async (req, res) => {
   try {
-    const Category = require('../models/Category');
     const { name, icon, color } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category name is required'
+      });
+    }
 
     const existing = await Category.findOne({ name });
     if (existing) {
@@ -380,14 +398,19 @@ router.post('/categories', async (req, res) => {
       });
     }
 
-    const category = await Category.create({ name, icon, color });
+    const category = await Category.create({
+      name,
+      icon: icon || 'category',
+      color: color || '#0EA5A5'
+    });
 
-    // Create audit log
-    await AuditLog.create({
+    // Non-blocking audit log with valid enum 'create'
+    await createAuditLog({
       user: req.user.id,
       action: 'create',
       details: `Category "${name}" created by admin`,
-      ip: req.ip
+      ip: req.ip,
+      severity: 'info'
     });
 
     res.status(201).json({
@@ -403,10 +426,9 @@ router.post('/categories', async (req, res) => {
   }
 });
 
-// Update category
+// Update category 
 router.put('/categories/:id', async (req, res) => {
   try {
-    const Category = require('../models/Category');
     const { id } = req.params;
     const { name, icon, color } = req.body;
 
@@ -424,12 +446,13 @@ router.put('/categories/:id', async (req, res) => {
 
     await category.save();
 
-    // Create audit log
-    await AuditLog.create({
+    // Non-blocking audit log
+    await createAuditLog({
       user: req.user.id,
       action: 'update',
       details: `Category "${category.name}" updated by admin`,
-      ip: req.ip
+      ip: req.ip,
+      severity: 'info'
     });
 
     res.status(200).json({
@@ -445,10 +468,9 @@ router.put('/categories/:id', async (req, res) => {
   }
 });
 
-// Delete category
+// ===== Delete category =====
 router.delete('/categories/:id', async (req, res) => {
   try {
-    const Category = require('../models/Category');
     const { id } = req.params;
 
     const category = await Category.findById(id);
@@ -459,14 +481,16 @@ router.delete('/categories/:id', async (req, res) => {
       });
     }
 
+    const categoryName = category.name;
     await category.deleteOne();
 
-    // Create audit log
-    await AuditLog.create({
+    // Non-blocking audit log
+    await createAuditLog({
       user: req.user.id,
       action: 'delete',
-      details: `Category "${category.name}" deleted by admin`,
-      ip: req.ip
+      details: `Category "${categoryName}" deleted by admin`,
+      ip: req.ip,
+      severity: 'warning'
     });
 
     res.status(200).json({

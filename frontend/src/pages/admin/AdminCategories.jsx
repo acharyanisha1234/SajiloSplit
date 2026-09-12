@@ -1,9 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Plus, Edit, Trash2, Tag, X, Search, Palette
+  Plus, Edit, Trash2, Tag, X, Search, 
+  UtensilsCrossed, Car, Home, GraduationCap,
+  ShoppingBag, Film, Zap, Plane, Laptop,
+  Heart, Shield, ShoppingCart, Coffee,
+  Shirt, Dumbbell, Briefcase, Package,
+  Smartphone, Book, Gift, MoreHorizontal
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+
+// Icon mapping - ALL VALID lucide-react icons
+const ICON_MAP = {
+  'restaurant': UtensilsCrossed,
+  'directions_car': Car,
+  'home': Home,
+  'school': GraduationCap,
+  'shopping_bag': ShoppingBag,
+  'movie': Film,
+  'bolt': Zap,
+  'flight': Plane,
+  'devices': Laptop,
+  'health_and_safety': Heart,
+  'verified_user': Shield,
+  'local_grocery_store': ShoppingCart,
+  'restaurant_menu': Coffee,
+  'checkroom': Shirt,
+  'sports': Dumbbell,
+  'work': Briefcase,
+  'smartphone': Smartphone,
+  'book': Book,
+  'gift': Gift,
+  'category': Package,
+  'other': MoreHorizontal
+};
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
@@ -11,15 +41,14 @@ const AdminCategories = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({ name: '', icon: 'category', color: '#0EA5A5' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    icon: 'category', 
+    color: '#0EA5A5' 
+  });
   const [submitting, setSubmitting] = useState(false);
 
-  const iconOptions = [
-    'category', 'restaurant', 'directions_car', 'home', 'school',
-    'shopping_bag', 'movie', 'bolt', 'flight', 'devices',
-    'health_and_safety', 'verified_user', 'local_grocery_store',
-    'restaurant_menu', 'checkroom', 'sports', 'pets', 'work'
-  ];
+  const iconOptions = Object.keys(ICON_MAP);
 
   const colorOptions = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -81,7 +110,14 @@ const AdminCategories = () => {
 
   const getFiltered = () => {
     if (!searchTerm) return categories;
-    return categories.filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return categories.filter(c => 
+      c.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const renderIcon = (iconName, className = 'w-6 h-6', style = {}) => {
+    const IconComponent = ICON_MAP[iconName] || Package;
+    return <IconComponent className={className} style={style} />;
   };
 
   const filtered = getFiltered();
@@ -96,10 +132,15 @@ const AdminCategories = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Category Management</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage expense categories</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Category Management
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Manage expense categories
+          </p>
         </div>
         <button
           onClick={() => {
@@ -114,6 +155,7 @@ const AdminCategories = () => {
         </button>
       </div>
 
+      {/* Search */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-xl">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -125,46 +167,68 @@ const AdminCategories = () => {
             className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5]"
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
               <X className="w-4 h-4 text-slate-400" />
             </button>
           )}
         </div>
       </div>
 
+      {/* Categories Grid */}
       {filtered.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-16 text-center border border-slate-100 dark:border-slate-800 shadow-xl">
           <div className="w-20 h-20 bg-[#0EA5A5]/10 rounded-3xl flex items-center justify-center mx-auto mb-4">
             <Tag className="w-10 h-10 text-[#0EA5A5]" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No categories</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Add your first category</p>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            No categories
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Add your first category
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filtered.map((cat) => (
-            <div key={cat._id} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group text-center">
+            <div
+              key={cat._id}
+              className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group text-center"
+            >
               <div
                 className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: cat.color + '20' }}
+                style={{ backgroundColor: (cat.color || '#0EA5A5') + '20' }}
               >
-                <Palette className="w-7 h-7" style={{ color: cat.color }} />
+                {renderIcon(cat.icon, 'w-7 h-7', { color: cat.color || '#0EA5A5' })}
               </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-3 truncate">{cat.name}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-1 truncate">
+                {cat.name}
+              </h3>
+              <p className="text-xs text-slate-400 mb-3">
+                {cat.isDefault ? 'Default' : 'Custom'}
+              </p>
               <div className="flex items-center justify-center gap-1">
                 <button
                   onClick={() => {
                     setEditingCategory(cat);
-                    setFormData({ name: cat.name, icon: cat.icon || 'category', color: cat.color || '#0EA5A5' });
+                    setFormData({
+                      name: cat.name,
+                      icon: cat.icon || 'category',
+                      color: cat.color || '#0EA5A5'
+                    });
                     setShowModal(true);
                   }}
                   className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-[#0EA5A5] transition"
+                  title="Edit"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(cat._id)}
                   className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 transition"
+                  title="Delete"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -174,9 +238,10 @@ const AdminCategories = () => {
         </div>
       )}
 
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-[#0EA5A5]" />
@@ -184,14 +249,20 @@ const AdminCategories = () => {
                   {editingCategory ? 'Edit Category' : 'Add Category'}
                 </h2>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              >
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Name *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Category Name *
+                </label>
                 <input
                   type="text"
                   value={formData.name}
@@ -202,8 +273,11 @@ const AdminCategories = () => {
                 />
               </div>
 
+              {/* Color Picker */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Color</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Color
+                </label>
                 <div className="grid grid-cols-5 gap-2">
                   {colorOptions.map((color) => (
                     <button
@@ -211,7 +285,9 @@ const AdminCategories = () => {
                       type="button"
                       onClick={() => setFormData({ ...formData, color })}
                       className={`w-10 h-10 rounded-xl border-2 transition-all ${
-                        formData.color === color ? 'border-slate-900 dark:border-white scale-110' : 'border-transparent'
+                        formData.color === color
+                          ? 'border-slate-900 dark:border-white scale-110'
+                          : 'border-transparent'
                       }`}
                       style={{ backgroundColor: color }}
                     />
@@ -219,23 +295,42 @@ const AdminCategories = () => {
                 </div>
               </div>
 
+              {/* Icon Picker */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Icon</label>
-                <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto">
-                  {iconOptions.map((icon) => (
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Icon
+                </label>
+                <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
+                  {iconOptions.map((iconName) => (
                     <button
-                      key={icon}
+                      key={iconName}
                       type="button"
-                      onClick={() => setFormData({ ...formData, icon })}
-                      className={`p-2 rounded-lg border-2 transition-all ${
-                        formData.icon === icon
+                      onClick={() => setFormData({ ...formData, icon: iconName })}
+                      className={`p-2 rounded-lg border-2 transition-all flex items-center justify-center ${
+                        formData.icon === iconName
                           ? 'border-[#0EA5A5] bg-[#0EA5A5]/10'
                           : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                       }`}
                     >
-                      <div className="w-6 h-6 rounded bg-slate-300 dark:bg-slate-600 mx-auto" />
+                      {renderIcon(iconName, 'w-5 h-5 text-slate-700 dark:text-slate-300')}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: formData.color + '20' }}
+                >
+                  {renderIcon(formData.icon, 'w-6 h-6', { color: formData.color })}
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Preview</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {formData.name || 'Category Name'}
+                  </p>
                 </div>
               </div>
 
@@ -244,7 +339,11 @@ const AdminCategories = () => {
                 disabled={submitting}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] text-white font-semibold shadow-lg shadow-[#0EA5A5]/25 hover:shadow-xl transition-all disabled:opacity-50"
               >
-                {submitting ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
+                {submitting 
+                  ? 'Saving...' 
+                  : editingCategory 
+                    ? 'Update Category' 
+                    : 'Create Category'}
               </button>
             </form>
           </div>
