@@ -1,15 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const { requireKYC } = require('../middleware/kyc');
 const Expense = require('../models/Expense');
 const Group = require('../models/Group');
 const WalletTransaction = require('../models/WalletTransaction');
 const { generateTransactionId } = require('../utils/generateId');
-const { requireKYC } = require('../middleware/kyc');
-
 const mongoose = require('mongoose');
 
-// Get all expenses for a group
+// ==========================================
+// GET ALL EXPENSES FOR A GROUP
+// ==========================================
+// @route   GET /api/expenses/group/:groupId
+// @access  Private
 router.get('/group/:groupId', protect, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -47,8 +50,12 @@ router.get('/group/:groupId', protect, async (req, res) => {
   }
 });
 
-// Create expense
-router.post('/', protect, async (req, res) => {
+// ==========================================
+// CREATE EXPENSE (KYC REQUIRED) 
+// ==========================================
+// @route   POST /api/expenses
+// @access  Private + KYC
+router.post('/', protect, requireKYC, async (req, res) => {
   try {
     const {
       title,
@@ -62,6 +69,22 @@ router.post('/', protect, async (req, res) => {
       description,
       receipt
     } = req.body;
+
+    // Validation
+    if (!title || !amount || !groupId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title, amount and group are required'
+      });
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid amount'
+      });
+    }
 
     // Validate group
     const group = await Group.findById(groupId);
@@ -101,7 +124,10 @@ router.post('/', protect, async (req, res) => {
 
     // Validate split based on split type
     if (splitType === 'percentage') {
-      const total = Object.values(parsedSplitDetails).reduce((sum, val) => sum + parseFloat(val), 0);
+      const total = Object.values(parsedSplitDetails).reduce(
+        (sum, val) => sum + parseFloat(val || 0), 
+        0
+      );
       if (Math.round(total) !== 100) {
         return res.status(400).json({
           success: false,
@@ -109,8 +135,11 @@ router.post('/', protect, async (req, res) => {
         });
       }
     } else if (splitType === 'exact') {
-      const total = Object.values(parsedSplitDetails).reduce((sum, val) => sum + parseFloat(val), 0);
-      if (Math.round(total) !== amount) {
+      const total = Object.values(parsedSplitDetails).reduce(
+        (sum, val) => sum + parseFloat(val || 0), 
+        0
+      );
+      if (Math.round(total) !== Math.round(numAmount)) {
         return res.status(400).json({
           success: false,
           message: 'Exact amounts must total the expense amount'
@@ -121,15 +150,15 @@ router.post('/', protect, async (req, res) => {
     // Create expense
     const expense = await Expense.create({
       title,
-      amount,
-      category,
+      amount: numAmount,
+      category: category || 'Other',
       paidBy: paidBy || req.user.id,
       group: groupId,
       members: validMembers,
-      splitType,
+      splitType: splitType || 'equal',
       splitDetails: parsedSplitDetails,
-      description,
-      receipt,
+      description: description || '',
+      receipt: receipt || null,
       status: group.requiresApproval ? 'pending' : 'approved'
     });
 
@@ -144,17 +173,23 @@ router.post('/', protect, async (req, res) => {
       const paidByName = req.user.name;
       io.to(`group-${groupId}`).emit('notification', {
         type: 'new_expense',
-        title: '🧾 New Expense',
-        message: `${paidByName} added expense "${title}" for Rs. ${amount}`
+        title: 'New Expense',
+        message: `${paidByName} added expense "${title}" for Rs. ${numAmount}`
       });
     }
+
+    // Populate and return
+    const populatedExpense = await Expense.findById(expense._id)
+      .populate('paidBy', 'name email')
+      .populate('members', 'name email');
 
     res.status(201).json({
       success: true,
       message: 'Expense created successfully',
-      data: expense
+      data: populatedExpense
     });
   } catch (error) {
+    console.error('Create expense error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -162,7 +197,9 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-// Update group balances
+// ==========================================
+//  HELPER: Update Group Balances
+// ==========================================
 async function updateGroupBalances(groupId, expense) {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -170,15 +207,15 @@ async function updateGroupBalances(groupId, expense) {
   try {
     // Update group balance
     const group = await Group.findById(groupId).session(session);
-    group.balance += expense.amount;
+    group.balance = (group.balance || 0) + expense.amount;
     await group.save({ session });
 
     // Create transaction for each member
     const members = expense.members || [];
+    const share = expense.amount / members.length;
+
     for (const memberId of members) {
       if (memberId.toString() !== expense.paidBy.toString()) {
-        // This is a simplified version - in real app, calculate shares properly
-        const share = expense.amount / members.length;
         await WalletTransaction.create([{
           transactionId: generateTransactionId(),
           sender: memberId,
@@ -203,7 +240,11 @@ async function updateGroupBalances(groupId, expense) {
   }
 }
 
-// Update expense (approve/reject)
+// ==========================================
+// UPDATE EXPENSE (Approve/Reject) 
+// ==========================================
+// @route   PUT /api/expenses/:id
+// @access  Private (Group Owner/Admin)
 router.put('/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
@@ -255,7 +296,11 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
-// Delete expense
+// ==========================================
+// ===== DELETE EXPENSE =====
+// ==========================================
+// @route   DELETE /api/expenses/:id
+// @access  Private
 router.delete('/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
@@ -292,6 +337,38 @@ router.delete('/:id', protect, async (req, res) => {
     });
   }
 });
-router.post('/', protect, requireKYC, createExpense);
+
+// ==========================================
+// ===== GET EXPENSE DETAILS =====
+// ==========================================
+// @route   GET /api/expenses/:id
+// @access  Private
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const expense = await Expense.findById(id)
+      .populate('paidBy', 'name email')
+      .populate('members', 'name email')
+      .populate('group', 'name');
+
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: 'Expense not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: expense
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 module.exports = router;

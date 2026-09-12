@@ -14,6 +14,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { languageOptions } from '../../utils/translations';
 
 const Settings = () => {
   const dispatch = useDispatch();
@@ -71,7 +72,6 @@ const Settings = () => {
   const [deleteShowPassword, setDeleteShowPassword] = useState(false);
 
   useEffect(() => {
-    // Load preferences from localStorage
     const savedSound = localStorage.getItem('soundEffects');
     if (savedSound === 'false') setSoundEffects(false);
     
@@ -81,7 +81,6 @@ const Settings = () => {
     const savedNotifications = localStorage.getItem('notifications');
     if (savedNotifications === 'false') setNotifications(false);
     
-    // Fetch sessions
     fetchSessions();
     fetch2FAStatus();
     fetchSettings();
@@ -182,7 +181,8 @@ const Settings = () => {
   // ===== LANGUAGE =====
   const handleLanguageChange = (lang) => {
     changeLanguage(lang);
-    toast.success(`Language changed to ${lang === 'ne' ? 'Nepali' : 'English'}`);
+    const selectedLang = languageOptions.find(l => l.code === lang);
+    toast.success(`Language changed to ${selectedLang?.native || lang}`);
   };
 
   // ===== CURRENCY =====
@@ -197,11 +197,11 @@ const Settings = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error(t('passwordsDontMatch'));
+      toast.error(t('passwordsDontMatch') || 'Passwords do not match');
       return;
     }
     if (passwordData.newPassword.length < 6) {
-      toast.error(t('passwordMinLength'));
+      toast.error(t('passwordMinLength') || 'Password must be at least 6 characters');
       return;
     }
     
@@ -211,11 +211,11 @@ const Settings = () => {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
-      toast.success(t('passwordChanged'));
+      toast.success(t('passwordChanged') || 'Password changed successfully');
       setShowPasswordModal(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
-      toast.error(error.response?.data?.message || t('somethingWentWrong'));
+      toast.error(error.response?.data?.message || t('somethingWentWrong') || 'Something went wrong');
     } finally {
       setPasswordLoading(false);
     }
@@ -246,7 +246,7 @@ const Settings = () => {
     try {
       await axios.post('/api/users/2fa/verify', { code: twoFACode });
       setTwoFAEnabled(true);
-      toast.success(t('twoFAEnabled'));
+      toast.success(t('twoFAEnabled') || '2FA enabled successfully');
       setShow2FAModal(false);
       setTwoFACode('');
     } catch (error) {
@@ -261,7 +261,7 @@ const Settings = () => {
     try {
       await axios.post('/api/users/2fa/disable');
       setTwoFAEnabled(false);
-      toast.success(t('twoFADisabled'));
+      toast.success(t('twoFADisabled') || '2FA disabled');
     } catch (error) {
       toast.error('Failed to disable 2FA');
     }
@@ -272,7 +272,7 @@ const Settings = () => {
     if (!confirm('Logout from all devices? You will be logged out from this device too.')) return;
     try {
       await axios.post('/api/users/sessions/logout-all');
-      toast.success(t('allDevicesLoggedOut'));
+      toast.success(t('allDevicesLoggedOut') || 'Logged out from all devices');
       dispatch(logout());
       navigate('/login');
     } catch (error) {
@@ -283,7 +283,7 @@ const Settings = () => {
   const handleLogoutDevice = async (sessionId) => {
     try {
       await axios.delete(`/api/users/sessions/${sessionId}`);
-      toast.success(t('sessionLoggedOut'));
+      toast.success(t('sessionLoggedOut') || 'Device logged out');
       fetchSessions();
     } catch (error) {
       toast.error('Failed to logout device');
@@ -338,11 +338,11 @@ const Settings = () => {
       await axios.delete('/api/users/account', {
         data: { password: deletePassword }
       });
-      toast.success(t('accountDeleted'));
+      toast.success(t('accountDeleted') || 'Account deleted successfully');
       dispatch(logout());
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.message || t('accountDeleteFailed'));
+      toast.error(error.response?.data?.message || t('accountDeleteFailed') || 'Failed to delete account');
     } finally {
       setDeleteLoading(false);
       setShowDeleteModal(false);
@@ -366,15 +366,15 @@ const Settings = () => {
     toast.success('Logged out successfully');
   };
 
-  // Settings Sections
+  // ===== SETTINGS SECTIONS =====
   const settingsSections = [
     {
-      title: t('preferences'),
+      title: t('preferences') || 'Preferences',
       icon: SettingsIcon,
       items: [
         { 
           id: 'darkMode', 
-          label: t('darkMode'), 
+          label: t('darkMode') || 'Dark Mode', 
           type: 'toggle', 
           value: theme === 'dark', 
           onChange: toggleDarkMode,
@@ -382,26 +382,29 @@ const Settings = () => {
         },
         { 
           id: 'language', 
-          label: t('language'), 
+          label: t('language') || 'Language', 
           type: 'select', 
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'ne', label: 'नेपाली' }
-          ], 
+          // ✅ FIXED: 12 LANGUAGES WITH FLAGS
+          options: languageOptions.map((lang) => ({
+            value: lang.code,
+            label: `${lang.flag} ${lang.native}`
+          })),
           value: language, 
           onChange: handleLanguageChange,
           icon: <Languages className="w-4 h-4" />
         },
         { 
           id: 'currency', 
-          label: t('currency'), 
+          label: t('currency') || 'Currency', 
           type: 'select', 
           options: [
             { value: 'NPR', label: 'NPR (Rs.)' },
             { value: 'USD', label: 'USD ($)' },
             { value: 'EUR', label: 'EUR (€)' },
             { value: 'GBP', label: 'GBP (£)' },
-            { value: 'INR', label: 'INR (₹)' }
+            { value: 'INR', label: 'INR (₹)' },
+            { value: 'AUD', label: 'AUD (A$)' },
+            { value: 'CAD', label: 'CAD (C$)' }
           ], 
           value: currency, 
           onChange: handleCurrencyChange,
@@ -409,7 +412,7 @@ const Settings = () => {
         },
         { 
           id: 'notifications', 
-          label: t('pushNotifications'), 
+          label: t('pushNotifications') || 'Push Notifications', 
           type: 'toggle', 
           value: notifications, 
           onChange: toggleNotifications,
@@ -417,7 +420,7 @@ const Settings = () => {
         },
         { 
           id: 'soundEffects', 
-          label: t('soundEffects'), 
+          label: t('soundEffects') || 'Sound Effects', 
           type: 'toggle', 
           value: soundEffects, 
           onChange: toggleSoundEffects,
@@ -426,19 +429,19 @@ const Settings = () => {
       ]
     },
     {
-      title: t('security'),
+      title: t('security') || 'Security',
       icon: Shield,
       items: [
         { 
           id: 'changePassword', 
-          label: t('changePassword'), 
+          label: t('changePassword') || 'Change Password', 
           type: 'button', 
           onClick: () => setShowPasswordModal(true),
           icon: <Lock className="w-4 h-4" />
         },
         { 
           id: 'twoFactor', 
-          label: t('twoFactorAuth'), 
+          label: t('twoFactorAuth') || 'Two-Factor Authentication', 
           type: 'button', 
           onClick: twoFAEnabled ? handle2FADisable : () => {
             setShow2FAModal(true);
@@ -450,7 +453,7 @@ const Settings = () => {
         },
         { 
           id: 'sessions', 
-          label: t('sessionManagement'), 
+          label: t('sessionManagement') || 'Session Management', 
           type: 'button', 
           onClick: () => document.getElementById('sessionsSection')?.scrollIntoView({ behavior: 'smooth' }),
           icon: <Smartphone className="w-4 h-4" />
@@ -484,26 +487,26 @@ const Settings = () => {
       ]
     },
     {
-      title: t('privacy'),
+      title: t('privacy') || 'Privacy',
       icon: FileText,
       items: [
         { 
           id: 'privacyPolicy', 
-          label: t('privacyPolicy'), 
+          label: t('privacyPolicy') || 'Privacy Policy', 
           type: 'link', 
           href: '/privacy',
           icon: <FileText className="w-4 h-4" />
         },
         { 
           id: 'termsOfService', 
-          label: t('termsOfService'), 
+          label: t('termsOfService') || 'Terms of Service', 
           type: 'link', 
           href: '/terms',
           icon: <FileText className="w-4 h-4" />
         },
         { 
           id: 'dataExport', 
-          label: t('dataExport'), 
+          label: t('dataExport') || 'Data Export', 
           type: 'button', 
           onClick: () => setShowExportModal(true),
           icon: <Download className="w-4 h-4" />
@@ -527,19 +530,19 @@ const Settings = () => {
       ]
     },
     {
-      title: t('account'),
+      title: t('account') || 'Account',
       icon: Globe,
       items: [
         { 
           id: 'profile', 
-          label: t('profile'), 
+          label: t('profile') || 'Profile', 
           type: 'link', 
           href: '/profile',
           icon: <User className="w-4 h-4" />
         },
         { 
           id: 'deleteAccount', 
-          label: t('deleteAccount'), 
+          label: t('deleteAccount') || 'Delete Account', 
           type: 'button', 
           onClick: () => setShowDeleteModal(true),
           icon: <Trash2 className="w-4 h-4" />,
@@ -547,7 +550,7 @@ const Settings = () => {
         },
         { 
           id: 'logout', 
-          label: t('logout'), 
+          label: t('logout') || 'Logout', 
           type: 'button', 
           onClick: handleLogout,
           icon: <LogOut className="w-4 h-4" />,
@@ -561,32 +564,39 @@ const Settings = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">{t('settings')}</h1>
-        <p className="text-sm text-[var(--text-secondary)] mt-0.5">Manage your app preferences</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          {t('settings') || 'Settings'}
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          Manage your app preferences
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sidebar Profile */}
         <div className="lg:col-span-1">
-          <div className="card-premium">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#0EA5A5]/30">
                 {user?.name?.charAt(0) || 'U'}
               </div>
-              <div>
-                <p className="font-bold">{user?.name}</p>
-                <p className="text-sm text-[var(--text-secondary)]">{user?.email}</p>
+              <div className="min-w-0">
+                <p className="font-bold text-slate-900 dark:text-white truncate">{user?.name}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
             </div>
             
-            <div className="border-t border-[var(--border)] pt-4 space-y-1">
-              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--surface-hover)] transition">
-                <User className="w-4 h-4 text-[var(--text-muted)]" />
-                <span className="text-sm font-medium text-[var(--text-secondary)]">Edit Profile</span>
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-1">
+              <button 
+                onClick={() => navigate('/profile')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+              >
+                <User className="w-4 h-4 text-slate-400" />
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Edit Profile</span>
               </button>
               <button 
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 transition text-red-500"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition text-red-500"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm font-medium">Logout</span>
@@ -598,21 +608,21 @@ const Settings = () => {
         {/* Settings Sections */}
         <div className="lg:col-span-2 space-y-4">
           {settingsSections.map((section) => (
-            <div key={section.title} className="card-premium overflow-hidden">
-              <div className="p-5 border-b border-[var(--border-light)] flex items-center gap-2">
+            <div key={section.title} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl overflow-hidden">
+              <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-[#0EA5A5]/10 text-[#0EA5A5]">
                   <section.icon className="w-4 h-4" />
                 </div>
-                <h2 className="font-semibold">{section.title}</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">{section.title}</h2>
               </div>
-              <div className="divide-y divide-[var(--border-light)]">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {section.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 hover:bg-[var(--surface-hover)] transition">
+                  <div key={item.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                     <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-[var(--surface)] text-[var(--text-muted)]">
+                      <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
                         {item.icon}
                       </div>
-                      <span className="text-sm font-medium">{item.label}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -626,7 +636,7 @@ const Settings = () => {
                         <button
                           onClick={item.onChange}
                           className={`relative w-11 h-6 rounded-full transition-colors ${
-                            item.value ? 'bg-[#0EA5A5]' : 'bg-[var(--border)]'
+                            item.value ? 'bg-[#0EA5A5]' : 'bg-slate-300 dark:bg-slate-600'
                           }`}
                         >
                           <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
@@ -659,7 +669,7 @@ const Settings = () => {
                         <select
                           value={item.value}
                           onChange={(e) => item.onChange(e.target.value)}
-                          className="border rounded-xl px-3 py-1.5 text-sm bg-[var(--input-bg)] focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5]"
+                          className="border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5]"
                         >
                           {item.options.map((opt) => (
                             <option key={opt.value} value={opt.value}>
@@ -678,17 +688,17 @@ const Settings = () => {
       </div>
 
       {/* ===== SESSIONS SECTION ===== */}
-      <div id="sessionsSection" className="card-premium">
+      <div id="sessionsSection" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-[#0EA5A5]" />
-            <h2 className="font-semibold">{t('activeSessions')}</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white">{t('activeSessions') || 'Active Sessions'}</h2>
           </div>
           <button 
             onClick={handleLogoutAllDevices}
             className="text-sm text-red-500 hover:text-red-600 font-medium transition"
           >
-            {t('logoutAll')}
+            {t('logoutAll') || 'Logout All'}
           </button>
         </div>
         
@@ -697,34 +707,36 @@ const Settings = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#0EA5A5]/20 border-t-[#0EA5A5] mx-auto"></div>
           </div>
         ) : sessions?.length === 0 ? (
-          <div className="text-center py-8 text-[var(--text-secondary)]">
-            <Smartphone className="w-8 h-8 mx-auto mb-2 text-[var(--text-muted)]" />
-            <p className="text-sm">{t('noSessions')}</p>
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+            <Smartphone className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+            <p className="text-sm">{t('noSessions') || 'No active sessions'}</p>
           </div>
         ) : (
           <div className="space-y-2">
             {sessions.map((session) => (
-              <div key={session.id || session._id} className="flex items-center justify-between p-3 bg-[var(--surface)] rounded-xl">
+              <div key={session.id || session._id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="p-1.5 rounded-lg bg-[#0EA5A5]/10 text-[#0EA5A5]">
                     <Smartphone className="w-4 h-4" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{session.deviceName || 'Unknown Device'}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                      {session.deviceName || 'Unknown Device'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {session.ip || 'Unknown IP'} • Last active: {session.lastActive ? new Date(session.lastActive).toLocaleString() : 'N/A'}
                     </p>
                   </div>
                   {session.isCurrent && (
-                    <span className="text-[10px] font-bold uppercase bg-[#0EA5A5]/10 text-[#0EA5A5] px-2 py-0.5 rounded-full">
-                      {t('current')}
+                    <span className="text-[10px] font-bold uppercase bg-[#0EA5A5]/10 text-[#0EA5A5] px-2 py-0.5 rounded-full whitespace-nowrap">
+                      {t('current') || 'Current'}
                     </span>
                   )}
                 </div>
                 {!session.isCurrent && (
                   <button 
                     onClick={() => handleLogoutDevice(session.id || session._id)}
-                    className="text-[var(--text-muted)] hover:text-red-500 transition"
+                    className="text-slate-400 hover:text-red-500 transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -737,27 +749,29 @@ const Settings = () => {
 
       {/* ===== CHANGE PASSWORD MODAL ===== */}
       {showPasswordModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="modal-content max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Lock className="w-5 h-5 text-[#0EA5A5]" />
-                <h2 className="text-xl font-bold">{t('changePassword')}</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('changePassword') || 'Change Password'}</h2>
               </div>
-              <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-[var(--surface-hover)] rounded-xl transition">
-                <X className="w-5 h-5 text-[var(--text-secondary)]" />
+              <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
             <form onSubmit={handlePasswordChange}>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">{t('currentPassword')}</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  {t('currentPassword') || 'Current Password'}
+                </label>
                 <div className="relative">
                   <input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={passwordData.currentPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                    className="input-field"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] pr-12"
                     placeholder="Enter current password"
                     autoComplete="current-password"
                     required
@@ -765,7 +779,7 @@ const Settings = () => {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -773,13 +787,15 @@ const Settings = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">{t('newPassword')}</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  {t('newPassword') || 'New Password'}
+                </label>
                 <div className="relative">
                   <input
                     type={showNewPassword ? 'text' : 'password'}
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    className="input-field"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] pr-12"
                     placeholder="Enter new password (min 6 chars)"
                     autoComplete="new-password"
                     required
@@ -787,7 +803,7 @@ const Settings = () => {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -795,13 +811,15 @@ const Settings = () => {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-1.5">{t('confirmPassword')}</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  {t('confirmPassword') || 'Confirm New Password'}
+                </label>
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    className="input-field"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5] pr-12"
                     placeholder="Confirm new password"
                     autoComplete="new-password"
                     required
@@ -809,7 +827,7 @@ const Settings = () => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -819,7 +837,7 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={passwordLoading}
-                className="w-full bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] text-white py-3.5 rounded-xl font-semibold hover:shadow-[0_20px_60px_-15px_rgba(14,165,165,0.4)] transition disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-[#0EA5A5] to-[#0B8A8A] text-white py-3.5 rounded-xl font-semibold hover:shadow-xl transition disabled:opacity-50"
               >
                 {passwordLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -837,67 +855,46 @@ const Settings = () => {
 
       {/* ===== 2FA MODAL ===== */}
       {show2FAModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="modal-content max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-[#0EA5A5]" />
-                <h2 className="text-xl font-bold">{t('twoFactorAuth')}</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('twoFactorAuth') || '2FA'}</h2>
               </div>
-              <button onClick={() => setShow2FAModal(false)} className="p-2 hover:bg-[var(--surface-hover)] rounded-xl transition">
-                <X className="w-5 h-5 text-[var(--text-secondary)]" />
+              <button onClick={() => setShow2FAModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
             {twoFASecret ? (
               <div className="space-y-4">
-                <div className="p-4 bg-[var(--surface)] rounded-xl text-center">
-                  <p className="text-sm text-[var(--text-secondary)] mb-2">Scan this QR code with Google Authenticator</p>
-                  <div className="w-40 h-40 bg-white mx-auto rounded-xl border-2 border-dashed border-[var(--border)] flex items-center justify-center">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl text-center">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Scan this QR code</p>
+                  <div className="w-40 h-40 bg-white mx-auto rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center">
                     <div className="text-6xl">📱</div>
                   </div>
-                  <div className="mt-2">
-                    <p className="text-xs text-[var(--text-muted)]">Or enter this key manually:</p>
-                    <code className="text-sm font-mono bg-[var(--surface)] px-3 py-1 rounded-lg block mt-1">
+                  <div className="mt-3">
+                    <p className="text-xs text-slate-400">Or enter this key manually:</p>
+                    <code className="text-sm font-mono bg-white dark:bg-slate-700 px-3 py-1 rounded-lg block mt-1 text-slate-900 dark:text-white">
                       {twoFASecret}
                     </code>
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(twoFASecret);
-                        toast.success('Secret key copied!');
-                      }}
-                      className="text-xs text-[#0EA5A5] mt-1 hover:underline"
-                    >
-                      Copy key
-                    </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">{t('enter2FACode')}</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    {t('enter2FACode') || 'Enter 6-digit code'}
+                  </label>
                   <input
                     type="text"
                     value={twoFACode}
                     onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="input-field text-center text-2xl font-bold tracking-widest"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-center text-2xl font-bold tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5]"
                     placeholder="000000"
                     maxLength="6"
                   />
                 </div>
-
-                {backupCodes.length > 0 && (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl dark:bg-amber-900/20 dark:border-amber-800">
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-400">{t('backupCodes')}</p>
-                    <div className="grid grid-cols-2 gap-1 mt-2">
-                      {backupCodes.map((code, i) => (
-                        <code key={i} className="text-xs font-mono bg-white px-2 py-1 rounded text-center dark:bg-gray-800 dark:text-white">
-                          {code}
-                        </code>
-                      ))}
-                    </div>
-                    <p className="text-xs text-amber-700 dark:text-amber-500 mt-2">{t('saveBackupCodes')}</p>
-                  </div>
-                )}
 
                 <button
                   onClick={handle2FAVerify}
@@ -910,8 +907,8 @@ const Settings = () => {
             ) : (
               <div className="text-center py-8">
                 <Shield className="w-16 h-16 text-[#0EA5A5] mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">Setup 2FA</h3>
-                <p className="text-sm text-[var(--text-secondary)] mt-2">Add an extra layer of security to your account</p>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Setup 2FA</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Add an extra layer of security</p>
                 <button
                   onClick={handle2FASetup}
                   className="mt-4 bg-[#0EA5A5] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#0B8A8A] transition"
@@ -926,27 +923,27 @@ const Settings = () => {
 
       {/* ===== DATA EXPORT MODAL ===== */}
       {showExportModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="modal-content max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Download className="w-5 h-5 text-[#0EA5A5]" />
-                <h2 className="text-xl font-bold">{t('dataExport')}</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('dataExport') || 'Export Data'}</h2>
               </div>
-              <button onClick={() => setShowExportModal(false)} className="p-2 hover:bg-[var(--surface-hover)] rounded-xl transition">
-                <X className="w-5 h-5 text-[var(--text-secondary)]" />
+              <button onClick={() => setShowExportModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
             <div className="space-y-4">
-              <p className="text-sm text-[var(--text-secondary)]">Download all your data in a ZIP file.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Download all your data in a ZIP file.</p>
               
               <div>
-                <label className="block text-sm font-medium mb-1.5">Export Type</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Export Type</label>
                 <select
                   value={exportType}
                   onChange={(e) => setExportType(e.target.value)}
-                  className="input-field"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0EA5A5]/20 focus:border-[#0EA5A5]"
                 >
                   <option value="all">All Data</option>
                   <option value="transactions">Transactions Only</option>
@@ -976,15 +973,15 @@ const Settings = () => {
 
       {/* ===== DELETE ACCOUNT MODAL - Multi-step ===== */}
       {showDeleteModal && (
-        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-          <div className="modal-content max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-red-600">
                 <AlertTriangle className="w-5 h-5" />
-                <h2 className="text-xl font-bold">{t('deleteAccount')}</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('deleteAccount') || 'Delete Account'}</h2>
               </div>
-              <button onClick={handleDeleteClose} className="p-2 hover:bg-[var(--surface-hover)] rounded-xl transition">
-                <X className="w-5 h-5 text-[var(--text-secondary)]" />
+              <button onClick={handleDeleteClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
@@ -992,15 +989,22 @@ const Settings = () => {
             {deleteStep === 1 && (
               <div className="space-y-4">
                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl dark:bg-red-900/20 dark:border-red-800">
-                  <p className="text-sm text-red-800 font-medium dark:text-red-400">⚠️ {t('deleteAccountWarning')}</p>
-                  <p className="text-sm text-red-600 dark:text-red-300 mt-1">{t('deleteAccountData')}</p>
-                  <ul className="text-sm text-red-600 dark:text-red-300 mt-2 space-y-1">
-                    <li>• {t('deleteAccountList').split('\n').map(item => item.replace('• ', '')).join('\n• ')}</li>
+                  <p className="text-sm text-red-800 font-medium dark:text-red-400">⚠️ This action is permanent!</p>
+                  <p className="text-sm text-red-600 dark:text-red-300 mt-2">
+                    All your data will be permanently deleted including:
+                  </p>
+                  <ul className="text-sm text-red-600 dark:text-red-300 mt-2 space-y-1 list-disc list-inside">
+                    <li>Personal information</li>
+                    <li>Transaction history</li>
+                    <li>Groups and expenses</li>
+                    <li>Budgets and bills</li>
+                    <li>Locked funds</li>
+                    <li>Emergency funds</li>
                   </ul>
                 </div>
                 <button
                   onClick={handleDeleteStep1}
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3.5 rounded-xl font-semibold hover:shadow-[0_20px_60px_-15px_rgba(239,68,68,0.4)] transition"
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3.5 rounded-xl font-semibold hover:shadow-xl transition"
                 >
                   Continue
                 </button>
@@ -1010,22 +1014,22 @@ const Settings = () => {
             {/* Step 2: Password Verification */}
             {deleteStep === 2 && (
               <form onSubmit={handleDeleteStep2} className="space-y-4">
-                <p className="text-sm text-[var(--text-secondary)]">Please enter your password to verify your identity.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Please enter your password to verify your identity.</p>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Password</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
                   <div className="relative">
                     <input
                       type={deleteShowPassword ? 'text' : 'password'}
                       value={deletePassword}
                       onChange={(e) => setDeletePassword(e.target.value)}
-                      className="input-field"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 pr-12"
                       placeholder="Enter your password"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setDeleteShowPassword(!deleteShowPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text)]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       {deleteShowPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -1035,13 +1039,13 @@ const Settings = () => {
                   <button
                     type="button"
                     onClick={() => setDeleteStep(1)}
-                    className="flex-1 border-2 border-[var(--border)] text-[var(--text-secondary)] py-3 rounded-xl font-semibold hover:bg-[var(--surface-hover)] transition"
+                    className="flex-1 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 py-3 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:shadow-[0_20px_60px_-15px_rgba(239,68,68,0.4)] transition"
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl transition"
                   >
                     Continue
                   </button>
@@ -1053,15 +1057,19 @@ const Settings = () => {
             {deleteStep === 3 && (
               <div className="space-y-4">
                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl dark:bg-red-900/20 dark:border-red-800">
-                  <p className="text-sm text-red-800 font-medium dark:text-red-400">{t('deleteAccountFinal')}</p>
+                  <p className="text-sm text-red-800 font-medium dark:text-red-400">
+                    Are you absolutely sure? This action cannot be undone.
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">{t('deleteAccountConfirm')}</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Type DELETE to confirm
+                  </label>
                   <input
                     type="text"
                     value={deleteConfirm}
                     onChange={(e) => setDeleteConfirm(e.target.value)}
-                    className="input-field"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                     placeholder="Type DELETE"
                   />
                 </div>
@@ -1069,14 +1077,14 @@ const Settings = () => {
                   <button
                     type="button"
                     onClick={() => setDeleteStep(2)}
-                    className="flex-1 border-2 border-[var(--border)] text-[var(--text-secondary)] py-3 rounded-xl font-semibold hover:bg-[var(--surface-hover)] transition"
+                    className="flex-1 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 py-3 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     Back
                   </button>
                   <button
                     onClick={handleDeleteStep3}
                     disabled={deleteLoading || deleteConfirm !== 'DELETE'}
-                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:shadow-[0_20px_60px_-15px_rgba(239,68,68,0.4)] transition disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 rounded-xl font-semibold hover:shadow-xl transition disabled:opacity-50"
                   >
                     {deleteLoading ? (
                       <span className="flex items-center justify-center gap-2">

@@ -8,7 +8,11 @@ const User = require('../models/User');
 const { generateTransactionId } = require('../utils/generateId');
 const mongoose = require('mongoose');
 
-// Get wallet details
+// ==========================================
+// ===== GET WALLET DETAILS =====
+// ==========================================
+// @route   GET /api/wallet
+// @access  Private
 router.get('/', protect, async (req, res) => {
   try {
     const wallet = await Wallet.findOne({ user: req.user.id });
@@ -32,12 +36,16 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// Add money to wallet
-router.post('/add-money', protect, async (req, res) => {
+// ==========================================
+// ===== ADD MONEY (KYC REQUIRED) =====
+// ==========================================
+// @route   POST /api/wallet/add-money
+// @access  Private + KYC
+router.post('/add-money', protect, requireKYC, async (req, res) => {
   try {
     const { amount, description } = req.body;
 
-    if (amount <= 0) {
+    if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
         message: 'Amount must be greater than 0'
@@ -96,12 +104,16 @@ router.post('/add-money', protect, async (req, res) => {
   }
 });
 
-// Send money to another user
-router.post('/send', protect, async (req, res) => {
+// ==========================================
+// ===== SEND MONEY (KYC REQUIRED) =====
+// ==========================================
+// @route   POST /api/wallet/send
+// @access  Private + KYC
+router.post('/send', protect, requireKYC, async (req, res) => {
   try {
     const { receiverId, amount, purpose } = req.body;
 
-    if (amount <= 0) {
+    if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
         message: 'Amount must be greater than 0'
@@ -145,8 +157,7 @@ router.post('/send', protect, async (req, res) => {
 
     try {
       const senderBalanceBefore = senderWallet.balance;
-      const receiverBalanceBefore = receiverWallet.balance;
-
+      
       senderWallet.balance -= amount;
       senderWallet.availableBalance -= amount;
       await senderWallet.save({ session });
@@ -172,17 +183,18 @@ router.post('/send', protect, async (req, res) => {
       await session.commitTransaction();
       session.endSession();
 
+      // ===== Real-time notifications =====
       const io = global.io;
       if (io) {
         io.to(`user-${receiverId}`).emit('notification', {
           type: 'money_received',
-          title: '💰 Money Received',
+          title: 'Money Received',
           message: `You received Rs. ${amount} from ${req.user.name}`
         });
 
         io.to(`user-${req.user.id}`).emit('notification', {
           type: 'money_sent',
-          title: '💸 Money Sent',
+          title: 'Money Sent',
           message: `You sent Rs. ${amount} to ${receiver.name}`
         });
       }
@@ -209,7 +221,11 @@ router.post('/send', protect, async (req, res) => {
   }
 });
 
-// Get transaction history
+// ==========================================
+// ===== GET TRANSACTION HISTORY =====
+// ==========================================
+// @route   GET /api/wallet/transactions
+// @access  Private
 router.get('/transactions', protect, async (req, res) => {
   try {
     const { page = 1, limit = 20, type, startDate, endDate, group } = req.query;
@@ -269,7 +285,11 @@ router.get('/transactions', protect, async (req, res) => {
   }
 });
 
-// Get transaction details
+// ==========================================
+// ===== GET TRANSACTION DETAILS =====
+// ==========================================
+// @route   GET /api/wallet/transactions/:id
+// @access  Private
 router.get('/transactions/:id', protect, async (req, res) => {
   try {
     const transaction = await WalletTransaction.findOne({
@@ -308,7 +328,11 @@ router.get('/transactions/:id', protect, async (req, res) => {
   }
 });
 
-// Get wallet summary
+// ==========================================
+// ===== GET WALLET SUMMARY =====
+// ==========================================
+// @route   GET /api/wallet/summary
+// @access  Private
 router.get('/summary', protect, async (req, res) => {
   try {
     const { period = 'monthly' } = req.query;
@@ -390,12 +414,16 @@ router.get('/summary', protect, async (req, res) => {
   }
 });
 
-// Withdraw money
-router.post('/withdraw', protect, async (req, res) => {
+// ==========================================
+// ===== WITHDRAW MONEY (KYC REQUIRED) =====
+// ==========================================
+// @route   POST /api/wallet/withdraw
+// @access  Private + KYC
+router.post('/withdraw', protect, requireKYC, async (req, res) => {
   try {
     const { amount, description } = req.body;
 
-    if (amount <= 0) {
+    if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
         message: 'Amount must be greater than 0'
@@ -460,11 +488,5 @@ router.post('/withdraw', protect, async (req, res) => {
     });
   }
 });
-
-//  KYC REQUIRED for these routes
-router.post('/add-money', requireKYC, addMoney);
-router.post('/send', requireKYC, sendMoney);
-router.post('/withdraw', requireKYC, withdraw);
-
 
 module.exports = router;

@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   isSuspended: { type: Boolean, default: false },
 
-  // ===== KYC VERIFICATION (Enhanced) =====
+  //  KYC VERIFICATION
   kyc: {
     status: {
       type: String,
@@ -29,13 +29,9 @@ const userSchema = new mongoose.Schema({
     documentBack: { type: String },
     selfie: { type: String },
     addressProof: { type: String },
-    
-    // Personal Info (from document)
     fullName: { type: String },
     dateOfBirth: { type: Date },
     address: { type: String },
-    
-    // Verification
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     verifiedAt: { type: Date },
     rejectionReason: { type: String },
@@ -49,10 +45,11 @@ const userSchema = new mongoose.Schema({
     backupCodes: [{ type: String }],
   },
 
-  // Security
+  //  Security (Enhanced)
   security: {
     lastLogin: { type: Date },
     lastLoginIP: { type: String },
+    lastFailedLogin: { type: Date }, 
     loginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date },
     devices: [{
@@ -62,6 +59,7 @@ const userSchema = new mongoose.Schema({
       browser: { type: String },
       os: { type: String },
       ip: { type: String },
+      fingerprint: { type: String }, 
       lastActive: { type: Date, default: Date.now },
       isTrusted: { type: Boolean, default: false },
     }],
@@ -71,6 +69,9 @@ const userSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     }],
   },
+
+  //  Password History (prevent reuse)
+  passwordHistory: [{ type: String, select: false }],
 
   // Transaction PIN
   transactionPin: { type: String },
@@ -107,14 +108,14 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// ===== Pre-save Hook =====
+// Pre-save Hook 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// ===== Methods =====
+// Methods 
 userSchema.methods.comparePassword = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
@@ -155,7 +156,7 @@ userSchema.methods.getSettings = function() {
   return { ...defaultSettings, ...(this.settings || {}) };
 };
 
-// ===== KYC Helper Methods =====
+//  KYC Helper Methods 
 userSchema.methods.isKYCVerified = function() {
   return this.kyc?.status === 'approved';
 };
@@ -170,7 +171,7 @@ userSchema.methods.getKYCStatus = function() {
   return this.kyc?.status || 'not_submitted';
 };
 
-// ===== Indexes =====
+// Indexes 
 userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
 userSchema.index({ 'kyc.status': 1 });

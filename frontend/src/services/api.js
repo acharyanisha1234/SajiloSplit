@@ -4,67 +4,105 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
+  timeout: 30000
 });
 
-// Add token to requests
+// DEVICE FINGERPRINT 
+const getDeviceFingerprint = () => {
+  let fingerprint = localStorage.getItem('deviceFingerprint');
+  if (!fingerprint) {
+    // Generate based on browser characteristics
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillText('fingerprint', 2, 2);
+    
+    const data = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width,
+      screen.height,
+      new Date().getTimezoneOffset(),
+      canvas.toDataURL()
+    ].join('|');
+    
+    // Simple hash
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) {
+      const char = data.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    
+    fingerprint = Math.abs(hash).toString(36);
+    localStorage.setItem('deviceFingerprint', fingerprint);
+  }
+  return fingerprint;
+};
+
+// REQUEST INTERCEPTOR 
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    config.headers['X-Device-Fingerprint'] = getDeviceFingerprint();
+    config.headers['X-Client-Time'] = new Date().toISOString();
+    
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle response errors
+//  RESPONSE INTERCEPTOR 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+
+    //  401: Unauthorized 
+    if (status === 401) {
       localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      
+      if (code === 'SESSION_HIJACKED') {
+        alert('Security Alert: Session hijacking detected. Please login again.');
+      }
+      
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
+
+    // 403: Forbidden 
+    if (status === 403) {
+      if (code === 'IP_BLOCKED') {
+        alert('Your IP has been blocked due to suspicious activity.');
+      } else if (code === 'ACCOUNT_SUSPENDED') {
+        alert('Your account has been suspended.');
+      } else if (code === 'KYC_REQUIRED') {
+        window.location.href = '/kyc';
+      }
+    }
+
+    // 423: Locked 
+    if (status === 423) {
+      alert(error.response.data.message || 'Account temporarily locked.');
+    }
+
+    // 429: Rate Limit 
+    if (status === 429) {
+      alert('Too many requests. Please wait and try again.');
+    }
+
     return Promise.reject(error);
   }
 );
-
-// User APIs
-export const getUsers = (search) => api.get('/users', { params: { search } });
-export const getUserProfile = (id) => api.get(`/users/${id}`);
-export const updateProfile = (data) => api.put('/users/profile', data);
-
-// Wallet APIs
-export const getWallet = () => api.get('/wallet');
-export const addMoney = (data) => api.post('/wallet/add-money', data);
-export const sendMoney = (data) => api.post('/wallet/send', data);
-export const getTransactions = (params) => api.get('/wallet/transactions', { params });
-
-// Group APIs
-export const getGroups = () => api.get('/groups');
-export const createGroup = (data) => api.post('/groups', data);
-export const getGroupDetails = (id) => api.get(`/groups/${id}`);
-export const addMember = (id, data) => api.post(`/groups/${id}/members`, data);
-
-// Expense APIs
-export const getExpenses = (groupId) => api.get(`/groups/${groupId}/expenses`);
-export const createExpense = (data) => api.post('/expenses', data);
-
-// Budget APIs
-export const getBudgets = () => api.get('/budgets');
-export const createBudget = (data) => api.post('/budgets', data);
-
-// Bill APIs
-export const getBills = () => api.get('/bills');
-export const createBill = (data) => api.post('/bills', data);
-
-// Notification APIs
-export const getNotifications = () => api.get('/notifications');
-export const markNotificationRead = (id) => api.put(`/notifications/${id}/read`);
 
 export default api;

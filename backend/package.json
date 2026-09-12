@@ -4,10 +4,9 @@
   "description": "SajiloSplit Backend API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "seed": "node seed/seed.js",
-    "create-admin": "node create-admin.js"
+    "start": "node --no-deprecation server.js",
+    "dev": "nodemon --no-deprecation server.js",
+    "seed": "node --no-deprecation seed/seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -22,7 +21,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.1",
     "qrcode": "^1.5.3",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.5.4"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
