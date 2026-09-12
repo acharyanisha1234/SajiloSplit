@@ -52,6 +52,7 @@ app.use('/api/notifications', require('./src/routes/notificationRoutes'));
 app.use('/api/disputes', require('./src/routes/disputeRoutes'));
 app.use('/api/categories', require('./src/routes/categoryRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
+app.use('/api/kyc', require('./src/routes/kycRoutes'));
 
 // Error handler
 app.use(require('./src/middleware/error').errorHandler);
