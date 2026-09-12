@@ -2,9 +2,7 @@
 # SAJILOSPLIT - GITIGNORE
 # ==========================================
 
-# ==========================================
 # LOGS
-# ==========================================
 logs/
 *.log
 npm-debug.log*
@@ -12,19 +10,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-debug.log*
-error.log*
 
-# ==========================================
 # DEPENDENCY DIRECTORIES
-# ==========================================
 node_modules/
 jspm_packages/
 bower_components/
 
-# ==========================================
 # BUILD OUTPUT
-# ==========================================
 dist/
 build/
 dist-ssr/
@@ -34,23 +26,16 @@ out/
 .cache/
 .parcel-cache/
 
-# ==========================================
-# ENVIRONMENT VARIABLES (SENSITIVE)
-# ==========================================
+# ENVIRONMENT VARIABLES
 .env
 .env.local
 .env.development
-.env.development.local
 .env.test
-.env.test.local
 .env.production
-.env.production.local
 .env.*
 !.env.example
 
-# ==========================================
-# UPLOADS (User Generated Content)
-# ==========================================
+# UPLOADS
 uploads/
 backend/uploads/
 public/uploads/
@@ -61,60 +46,36 @@ public/uploads/
 *.webp
 *.svg
 *.ico
-
-# Exception - Keep these images
 !public/vite.svg
 !public/favicon.ico
-!src/assets/**/*.svg
-!src/assets/**/*.png
 
-# ==========================================
-# EDITOR DIRECTORIES AND FILES
-# ==========================================
+# EDITOR
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json
 .idea/
 *.swp
 *.swo
-*.swn
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-*.code-workspace
 
-# ==========================================
-# OPERATING SYSTEM FILES
-# ==========================================
+# OS FILES
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 desktop.ini
-*.lnk
 
-# ==========================================
 # TEST FILES (SENSITIVE)
-# ==========================================
 login.json
 signup.json
 *.test.json
 test-*.json
-*-test.json
 *.credentials.json
 credentials.json
 secrets.json
-*.secret
-*.key
 
-# ==========================================
 # BACKUP FILES
-# ==========================================
 *.bak
 *.backup
 *.tmp
@@ -122,87 +83,35 @@ secrets.json
 *.old
 *.orig
 *.save
-*.~*
 
-# ==========================================
 # MONGODB FILES
-# ==========================================
 data/
 *.mdb
 *.ns
-*.lock
 mongod.lock
 backend/data/
 
-# ==========================================
-# PACKAGE MANAGER FILES
-# ==========================================
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.npm/
-.yarn/
-.pnp.*
-.yarnrc.yml
-
-# ==========================================
 # RUNTIME DATA
-# ==========================================
 pids/
 *.pid
 *.seed
 *.pid.lock
 
-# ==========================================
-# COVERAGE DIRECTORY
-# ==========================================
+# COVERAGE
 coverage/
 .nyc_output/
 *.lcov
 
-# ==========================================
 # ESLINT CACHE
-# ==========================================
 .eslintcache
 
-# ==========================================
-# SERVERLESS
-# ==========================================
-.serverless/
-.serverless_plugins/
-
-# ==========================================
 # TEMP FILES
-# ==========================================
 .temp/
 .tmp/
 temp/
 tmp/
 
-# ==========================================
 # VITE CACHE
-# ==========================================
 .vite/
 frontend/.vite/
 
-# ==========================================
-# TAILWIND
-# ==========================================
-tailwind.config.js.bak
-
-# ==========================================
-# OPTIONAL - NPM
-# ==========================================
-.npmrc
-
-# ==========================================
-# OPTIONAL - LOCKS
-# ==========================================
-.lock-wscript
-
-# ==========================================
-# OPTIONAL - BUILD ARTIFACTS
-# ==========================================
-*.tsbuildinfo
-.eslintcache
-.parcel-cache
