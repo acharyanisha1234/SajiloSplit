@@ -5,6 +5,8 @@ const Expense = require('../models/Expense');
 const Group = require('../models/Group');
 const WalletTransaction = require('../models/WalletTransaction');
 const { generateTransactionId } = require('../utils/generateId');
+const { requireKYC } = require('../middleware/kyc');
+
 const mongoose = require('mongoose');
 
 // Get all expenses for a group
@@ -290,5 +292,6 @@ router.delete('/:id', protect, async (req, res) => {
     });
   }
 });
+router.post('/', protect, requireKYC, createExpense);
 
 module.exports = router;

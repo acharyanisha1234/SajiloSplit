@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const { requireKYC } = require('../middleware/kyc');
 const Wallet = require('../models/Wallet');
 const WalletTransaction = require('../models/WalletTransaction');
 const User = require('../models/User');
@@ -459,5 +460,11 @@ router.post('/withdraw', protect, async (req, res) => {
     });
   }
 });
+
+//  KYC REQUIRED for these routes
+router.post('/add-money', requireKYC, addMoney);
+router.post('/send', requireKYC, sendMoney);
+router.post('/withdraw', requireKYC, withdraw);
+
 
 module.exports = router;

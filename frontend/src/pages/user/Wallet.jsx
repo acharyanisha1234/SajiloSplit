@@ -3,12 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { 
   Wallet as WalletIcon, TrendingUp, TrendingDown, Lock, Plus, Send, 
   Eye, Download, CreditCard, Shield, Clock, ArrowUpRight,
-  ArrowDownLeft, Copy, Check, Gift, X
+  ArrowDownLeft, Copy, Check, Gift, X, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getWallet, addMoney, getTransactions } from '../../store/slices/walletSlice';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { exportTransactionsPDF, exportTransactionsCSV } from '../../utils/pdfExport';
 import toast from 'react-hot-toast';
 
 const Wallet = () => {
@@ -19,20 +20,22 @@ const Wallet = () => {
   const { isDark } = useTheme();
   
   const [showAddMoney, setShowAddMoney] = useState(false);
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     dispatch(getWallet());
-    dispatch(getTransactions({ limit: 5 }));
+    dispatch(getTransactions({ limit: 50 }));
   }, [dispatch]);
 
   const formatCurrency = (amount) => {
     const currency = localStorage.getItem('currency') || 'NPR';
-    return `${currency} ${Number(amount).toLocaleString('en-IN')}`;
+    return `${currency} ${Number(amount || 0).toLocaleString('en-IN')}`;
   };
 
   const handleAddMoney = async (e) => {
@@ -62,6 +65,46 @@ const Wallet = () => {
     setCopied(true);
     toast.success(t('copied') || 'Copied!');
     setTimeout(() => setCopied(false), 3000);
+  };
+
+  // ===== DOWNLOAD PDF =====
+  const handleDownloadPDF = async () => {
+    if (!transactions || transactions.length === 0) {
+      toast.error('No transactions to export');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      exportTransactionsPDF(transactions, user, wallet);
+      toast.success('PDF downloaded successfully!');
+      setShowDownloadOptions(false);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to download PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // ===== DOWNLOAD CSV =====
+  const handleDownloadCSV = async () => {
+    if (!transactions || transactions.length === 0) {
+      toast.error('No transactions to export');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      exportTransactionsCSV(transactions, user);
+      toast.success('CSV downloaded successfully!');
+      setShowDownloadOptions(false);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      toast.error('Failed to download CSV');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const recentTransactions = transactions?.slice(0, 5) || [];
@@ -203,7 +246,12 @@ const Wallet = () => {
                 </div>
                 <ArrowUpRight className="w-4 h-4 text-muted" />
               </Link>
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-surface-hover transition-all group">
+              
+              {/* Download Statement Button with Options */}
+              <button 
+                onClick={() => setShowDownloadOptions(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-surface-hover transition-all group"
+              >
                 <div className="p-2 rounded-xl bg-[#D4A373]/10 text-[#D4A373] group-hover:scale-110 transition">
                   <Download className="w-4 h-4" />
                 </div>
@@ -212,6 +260,7 @@ const Wallet = () => {
                 </div>
                 <ArrowUpRight className="w-4 h-4 text-muted" />
               </button>
+              
               <button 
                 onClick={handleCopyId}
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-surface-hover transition-all group"
@@ -296,6 +345,83 @@ const Wallet = () => {
               <p className="text-xs text-muted mt-1">{t('addMoneyToStart') || 'Add money to get started'}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/*  Download Options Modal */}
+      {showDownloadOptions && (
+        <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+          <div className="modal-content max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Download className="w-5 h-5 text-[#0EA5A5]" />
+                <h2 className="text-xl font-bold text-primary">Download Statement</h2>
+              </div>
+              <button 
+                onClick={() => setShowDownloadOptions(false)} 
+                className="p-2 hover:bg-surface-hover rounded-xl transition"
+              >
+                <X className="w-5 h-5 text-secondary" />
+              </button>
+            </div>
+
+            <p className="text-sm text-secondary mb-4">
+              Choose a format to download your transaction history
+            </p>
+
+            <div className="space-y-3">
+              {/* PDF Option */}
+              <button
+                onClick={handleDownloadPDF}
+                disabled={exporting}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#0EA5A5] hover:bg-[#0EA5A5]/5 transition-all group disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-primary">PDF Document</p>
+                  <p className="text-xs text-secondary">
+                    Professional statement with formatted tables
+                  </p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-[#0EA5A5] transition" />
+              </button>
+
+              {/* CSV Option */}
+              <button
+                onClick={handleDownloadCSV}
+                disabled={exporting}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-[#0EA5A5] hover:bg-[#0EA5A5]/5 transition-all group disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-primary">CSV File</p>
+                  <p className="text-xs text-secondary">
+                    Excel compatible spreadsheet format
+                  </p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-[#0EA5A5] transition" />
+              </button>
+            </div>
+
+            {exporting && (
+              <div className="mt-4 p-3 bg-[#0EA5A5]/5 rounded-xl flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-[#0EA5A5]/30 border-t-[#0EA5A5] rounded-full animate-spin"></div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Generating your statement...
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {transactions?.length || 0} transactions will be included
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

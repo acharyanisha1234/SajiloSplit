@@ -29,6 +29,8 @@ import EmergencyFunds from './pages/user/EmergencyFunds';
 import Notifications from './pages/user/Notifications';
 import Profile from './pages/user/Profile';
 import Settings from './pages/user/Settings';
+import KYC from './pages/user/KYC';
+
 
 // Admin Pages
 import AdminLayout from './layouts/AdminLayout';
@@ -96,6 +98,8 @@ const AppRoutes = () => {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/kyc" element={<KYC />} />
+        
       </Route>
 
       {/* Admin Routes */}

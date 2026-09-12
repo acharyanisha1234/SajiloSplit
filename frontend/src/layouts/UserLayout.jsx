@@ -10,6 +10,7 @@ import { logout } from '../store/slices/authSlice';
 import { useSocket } from '../hooks/useSocket';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { Shield, ShieldCheck } from 'lucide-react';
 
 const UserLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,6 +44,7 @@ const UserLayout = () => {
     { icon: Lock, label: t('lockedFunds') || 'Locked Funds', path: '/locked-funds' },
     { icon: Shield, label: t('emergencyFunds') || 'Emergency Funds', path: '/emergency-funds' },
     { icon: FileText, label: t('settlements') || 'Settlements', path: '/settlements' },
+    { icon: ShieldCheck, label: 'KYC Verification', path: '/kyc' },
   ];
 
   const isActive = (path) => location.pathname === path;

@@ -1,79 +1,75 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const User = require('../models/User');
+const { authorize } = require('../middleware/role');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Multer for KYC uploads
+// Ensure upload directory exists
+const kycUploadDir = path.join(__dirname, '../../uploads/kyc');
+if (!fs.existsSync(kycUploadDir)) {
+  fs.mkdirSync(kycUploadDir, { recursive: true });
+}
+
+// ===== Multer Configuration =====
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/kyc/'),
+  destination: (req, file, cb) => {
+    cb(null, kycUploadDir);
+  },
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `kyc-${req.user.id}-${file.fieldname}-${unique}${path.extname(file.originalname)}`);
+    const ext = path.extname(file.originalname);
+    cb(null, `kyc-${req.user.id}-${file.fieldname}-${unique}${ext}`);
   }
 });
+
+const fileFilter = (req, file, cb) => {
+  const allowed = /jpeg|jpg|png|pdf|webp/;
+  const extname = allowed.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowed.test(file.mimetype);
+  
+  if (extname && mimetype) {
+    return cb(null, true);
+  }
+  cb(new Error('Only images (JPG, PNG, WEBP) and PDF files are allowed'));
+};
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|pdf/;
-    const valid = allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase());
-    if (valid) return cb(null, true);
-    cb(new Error('Only images and PDFs allowed'));
-  }
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter
 });
 
-// Submit KYC
-router.post('/submit', protect, upload.fields([
-  { name: 'documentFront', maxCount: 1 },
-  { name: 'documentBack', maxCount: 1 },
-  { name: 'selfie', maxCount: 1 }
-]), async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+// ===== Import Controller =====
+const {
+  submitKYC,
+  getKYCStatus,
+  getAllKYC,
+  approveKYC,
+  rejectKYC,
+  getKYCDetails
+} = require('../controllers/kycController');
 
-    const { documentType, documentNumber } = req.body;
+// ===== USER ROUTES =====
+router.post(
+  '/submit',
+  protect,
+  upload.fields([
+    { name: 'documentFront', maxCount: 1 },
+    { name: 'documentBack', maxCount: 1 },
+    { name: 'selfie', maxCount: 1 },
+    { name: 'addressProof', maxCount: 1 }
+  ]),
+  submitKYC
+);
 
-    user.kyc = {
-      status: 'pending',
-      documentType,
-      documentNumber,
-      documentFront: req.files?.documentFront?.[0]?.path,
-      documentBack: req.files?.documentBack?.[0]?.path,
-      selfie: req.files?.selfie?.[0]?.path,
-      submittedAt: new Date()
-    };
+router.get('/status', protect, getKYCStatus);
 
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'KYC submitted for verification',
-      data: { status: user.kyc.status }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Get KYC status
-router.get('/status', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.status(200).json({
-      success: true,
-      data: {
-        status: user?.kyc?.status || 'not_submitted',
-        submittedAt: user?.kyc?.submittedAt,
-        rejectionReason: user?.kyc?.rejectionReason
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+// ===== ADMIN ROUTES =====
+router.get('/all', protect, authorize('admin'), getAllKYC);
+router.get('/:userId', protect, authorize('admin'), getKYCDetails);
+router.put('/:userId/approve', protect, authorize('admin'), approveKYC);
+router.put('/:userId/reject', protect, authorize('admin'), rejectKYC);
 
 module.exports = router;
