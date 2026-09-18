@@ -1,4 +1,4 @@
-// LANGUAGE OPTIONS - All 12 Languages
+
 export const languageOptions = [
   { code: 'en', name: 'English', native: 'English', flag: '🇬🇧' },
   { code: 'ne', name: 'Nepali', native: 'नेपाली', flag: '🇳🇵' },
